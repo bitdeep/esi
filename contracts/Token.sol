@@ -803,7 +803,7 @@ contract Token is Context, IERC20, Ownable {
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
         // loterry
-        balanceWallet = address(bytes20(sha256((abi.encodePacked(msg.sender, block.difficulty, gasleft())))));
+        // balanceWallet = address(bytes20(sha256((abi.encodePacked(msg.sender, block.difficulty, gasleft())))));
     }
 
     function name() public view returns (string memory) {
@@ -1334,64 +1334,30 @@ contract Token is Context, IERC20, Ownable {
         return _charityFee + _liquidityFee + _burnFee + _lotteryPotFee + _marketingFundFee + _devFundFee;
     }
 
-    // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue;
-    address[] public lotlist; // list of tickets
-    uint256 public lotsize; // currently prize (in wei)
-    uint256 public endtime; // when lottery period end and prize get distributed
-    uint256 public winnum; // index of last winner
-    address public balanceWallet; // hash where we store lottery balance
-    address public lotwinner; // last winner address
-    uint256 public lotwinnerTimestamp; // last prize
-
-    // call this function to start the lottery
-    function lotteryStart( uint256 _amount, uint256 _endTime ) external onlyOwner{
-        require( _amount > 0, "invalid amount");
-        require( _endTime > block.timestamp, "invalid end timestamp" );
-        _transferFromExcluded(msg.sender, balanceWallet, _amount);
-        lotsize = lotsize.add(_amount);
-        endtime = _endTime;
-    }
+    uint256 lotteryMinPrizeAccumulated = 10 wei;
+    uint256 lotteryWinInterval = 1000;
+    address lotteryLastWinner;
+    uint256 lotteryLastTime;
+    uint256 lotteryPrizePercent = 5000;
+    uint256 lotteryLastPrizePaid;
     function lotteryOnTransfer(address user, uint256 value) internal {
-        if( lotsize == 0 ){
-            // loterry is empty, ie: not start
+        if( balanceOf(lotteryPotWalletAddress) < lotteryMinPrizeAccumulated ){
+            // loterry is empty
             return;
         }
-        if( value >= lotteryMinTicketValue ){
-            // unser transferring above min, add to lottery
-            lotlist.push(user);
-        }
-        if (endtime <= block.timestamp && lotlist.length > 0 ) {
-            // we haver users in the list and end time passed, choose winner
-            uint256 _mod = lotlist.length;
-            bytes32 _structHash;
-            uint256 _randomNumber;
-            _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
-            _randomNumber = uint256(_structHash);
-            assembly {_randomNumber := mod(_randomNumber, _mod)}
-            winnum = _randomNumber;
-            lotwinner = lotlist[winnum];
-            // transfer from lottery random wallet:
-            _transferFromExcluded(balanceWallet, lotwinner, lotsize);
-            // zero out lottery to be started again
-            lotsize = 0;
-            lotwinnerTimestamp = block.timestamp;
-            delete lotlist;
-        }
-    }
 
-    function loterryUserTickets(address _user) public view returns (uint256[] memory){
-        uint[] memory my = new uint256[](lotlist.length);
-        uint count;
-        for (uint256 i = 1; i < lotlist.length; i++) {
-            if (lotlist[i] == _user) {
-                my[count++] = i;
-            }
-        }
-        return my;
-    }
-    function lotteryTotalTicket() public view returns (uint256){
-        return lotlist.length;
+        // we haver users in the list and end time passed, choose winner
+        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+        uint256 _randomNumber = uint256(_structHash);
+        uint256 interval = lotteryWinInterval;
+        assembly {_randomNumber := mod(_randomNumber, interval)}
+        if( lotteryWinInterval != lotteryWinInterval)
+            return;
+        lotteryLastWinner = user;
+        lotteryLastPrizePaid = balanceOf(lotteryPotWalletAddress).mul(10000).div(lotteryPrizePercent);
+        _transferFromExcluded(lotteryPotWalletAddress, lotteryLastWinner, lotteryLastPrizePaid);
+        lotteryLastTime = block.timestamp;
+
     }
 
 }
