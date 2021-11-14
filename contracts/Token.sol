@@ -734,6 +734,7 @@ contract Token is Context, IERC20, Ownable {
     string private _symbol = "TST";
     uint8 private _decimals = 9;
 
+    address public donationAddress = 0x000000000000000000000000000000000000000d;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0xEddC9dAFDC8e01700a8Ede256F7efe07eDE29A72;
     address public devFundWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
@@ -802,8 +803,6 @@ contract Token is Context, IERC20, Ownable {
 
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
-        // loterry
-        // balanceWallet = address(bytes20(sha256((abi.encodePacked(msg.sender, block.difficulty, gasleft())))));
     }
 
     function name() public view returns (string memory) {
@@ -976,7 +975,8 @@ contract Token is Context, IERC20, Ownable {
     receive() external payable {}
 
     function _reflectFee(rInfo memory rr, tInfo memory tt) private {
-        _rTotal = _rTotal.sub(rr.rDistributionFee);//.sub(rr.rFee1).sub(rr.rFee2).sub(rr.rBurn);
+        _rTotal = _rTotal.sub(rr.rDistributionFee);
+        //.sub(rr.rFee1).sub(rr.rFee2).sub(rr.rBurn);
         _tFeeTotal = _tFeeTotal.add(tt.tDistributionFee).add(tt.tCharityFee).add(tt.tDevFundFee).add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn);
         _rOwned[charityWalletAddress] = _rOwned[charityWalletAddress].add(rr.rCharityFee);
         _rOwned[devFundWalletAddress] = _rOwned[devFundWalletAddress].add(rr.rDevFundFee);
@@ -1017,7 +1017,7 @@ contract Token is Context, IERC20, Ownable {
 
     function _getValues(uint256 tAmount) private view returns (rInfo memory rr, tInfo memory tt) {
         tt = _getTValues(tAmount);
-        rr = _getRValues(tAmount, tt.tDistributionFee, tt.tCharityFee, tt.tDevFundFee, tt.tMarketingFundFee, tt.tLotteryPotFee,  tt.tBurn, tt.tLiquidity, _getRate());
+        rr = _getRValues(tAmount, tt.tDistributionFee, tt.tCharityFee, tt.tDevFundFee, tt.tMarketingFundFee, tt.tLotteryPotFee, tt.tBurn, tt.tLiquidity, _getRate());
         return (rr, tt);
     }
 
@@ -1027,22 +1027,22 @@ contract Token is Context, IERC20, Ownable {
         tt.tDevFundFee = calculateDevFundFee(tAmount);
         tt.tMarketingFundFee = calculateMarketingFundFee(tAmount);
         tt.tLotteryPotFee = calculateLotteryPotFee(tAmount);
-        tt. tBurn = calculateBurnFee(tAmount);
-        tt. tLiquidity = calculateLiquidityFee(tAmount);
-        tt. tTransferAmount = tAmount.sub(tt.tDistributionFee).sub(tt.tCharityFee).sub(tt.tDevFundFee).sub(tt.tMarketingFundFee).sub(tt.tLotteryPotFee).sub(tt.tBurn).sub(tt.tLiquidity);
+        tt.tBurn = calculateBurnFee(tAmount);
+        tt.tLiquidity = calculateLiquidityFee(tAmount);
+        tt.tTransferAmount = tAmount.sub(tt.tDistributionFee).sub(tt.tCharityFee).sub(tt.tDevFundFee).sub(tt.tMarketingFundFee).sub(tt.tLotteryPotFee).sub(tt.tBurn).sub(tt.tLiquidity);
         return tt;
     }
 
     function _getRValues(uint256 tAmount, uint256 tDistributionFee, uint256 tCharityFee, uint256 tDevFundFee, uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 tLiquidity, uint256 currentRate) private pure returns (rInfo memory rr) {
-        rr. rAmount = tAmount.mul(currentRate);
+        rr.rAmount = tAmount.mul(currentRate);
         rr.rDistributionFee = tDistributionFee.mul(currentRate);
         rr.rCharityFee = tCharityFee.mul(currentRate);
         rr.rDevFundFee = tDevFundFee.mul(currentRate);
         rr.rMarketingFundFee = tMarketingFundFee.mul(currentRate);
         rr.rLotteryPotFee = tLotteryPotFee.mul(currentRate);
-        rr. rBurn = tBurn.mul(currentRate);
-        rr. rLiquidity = tLiquidity.mul(currentRate);
-        rr. rTransferAmount = rr.rAmount.sub(rr.rDistributionFee).sub(rr.rCharityFee).sub(rr.rDevFundFee).sub(rr.rMarketingFundFee).sub(rr.rLotteryPotFee).sub(rr.rBurn).sub(rr.rLiquidity);
+        rr.rBurn = tBurn.mul(currentRate);
+        rr.rLiquidity = tLiquidity.mul(currentRate);
+        rr.rTransferAmount = rr.rAmount.sub(rr.rDistributionFee).sub(rr.rCharityFee).sub(rr.rDevFundFee).sub(rr.rMarketingFundFee).sub(rr.rLotteryPotFee).sub(rr.rBurn).sub(rr.rLiquidity);
         return rr;
     }
 
@@ -1082,6 +1082,7 @@ contract Token is Context, IERC20, Ownable {
     function calculateDevFundFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_devFundFee).div(10 ** 2);
     }
+
     function calculateMarketingFundFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_marketingFundFee).div(10 ** 2);
     }
@@ -1146,6 +1147,7 @@ contract Token is Context, IERC20, Ownable {
     uint256 public lastCreationTime;
     uint256 public allowedAmount;
     uint256 public lastUserBalance;
+
     function _antiAbuse(address from, address to, uint256 amount) private {
         if (from != owner() && to != owner())
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
@@ -1155,18 +1157,18 @@ contract Token is Context, IERC20, Ownable {
         lastUserBalance = balanceOf(to) + (amount * (100 - getTotalFees()) / 100);
 
         // bot \ whales prevention
-        if ( now <= (_creationTime.add(1 days)) ) {
+        if (now <= (_creationTime.add(1 days))) {
             lastCreationTime = _creationTime.add(1 days);
             allowedAmount = tSupply.div(10000).mul(10);
-            require(lastUserBalance < allowedAmount,"Transfer amount exceeds the max for day 1");
-        } else if ( now <= (_creationTime.add(2 days)) ) {
+            require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 1");
+        } else if (now <= (_creationTime.add(2 days))) {
             lastCreationTime = _creationTime.add(2 days);
             allowedAmount = tSupply.div(10000).mul(20);
-            require(lastUserBalance < allowedAmount,"Transfer amount exceeds the max for day 2");
-        } else if ( now <= (_creationTime.add(3 days)) ) {
+            require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 2");
+        } else if (now <= (_creationTime.add(3 days))) {
             lastCreationTime = _creationTime.add(3 days);
             allowedAmount = tSupply.div(10000).mul(30);
-            require(lastUserBalance < allowedAmount,"Transfer amount exceeds the max for day 3");
+            require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 3");
         }
     }
 
@@ -1214,6 +1216,9 @@ contract Token is Context, IERC20, Ownable {
 
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(from, to, amount, takeFee);
+
+        // process lottery if user is paying fee
+        lotteryOnTransfer(from, to, amount);
     }
 
     function swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
@@ -1288,8 +1293,6 @@ contract Token is Context, IERC20, Ownable {
             _transferBothExcluded(sender, recipient, amount);
         } else {
             _transferStandard(sender, recipient, amount);
-            // process lottery if user is paying fee
-            lotteryOnTransfer(sender, amount);
         }
 
         if (!takeFee)
@@ -1334,30 +1337,70 @@ contract Token is Context, IERC20, Ownable {
         return _charityFee + _liquidityFee + _burnFee + _lotteryPotFee + _marketingFundFee + _devFundFee;
     }
 
-    uint256 lotteryMinPrizeAccumulated = 10 wei;
-    uint256 lotteryWinInterval = 1000;
-    address lotteryLastWinner;
-    uint256 lotteryLastTime;
-    uint256 lotteryPrizePercent = 5000;
-    uint256 lotteryLastPrizePaid;
-    function lotteryOnTransfer(address user, uint256 value) internal {
-        if( balanceOf(lotteryPotWalletAddress) < lotteryMinPrizeAccumulated ){
-            // loterry is empty
-            return;
+    // mint transfer value to get a ticket
+    uint256 public lotteryMinTicketValue;
+    address[] public lotlist; // list of tickets
+    uint256 public lotsize; // currently prize (in wei)
+    uint256 public endtime; // when lottery period end and prize get distributed
+    uint256 public winnum; // index of last winner
+    address public balanceWallet; // hash where we store lottery balance
+    address public lotwinner; // last winner address
+    uint256 public lotwinnerTimestamp; // last prize
+    mapping(address => uint256) public userTicketsTs;
+    uint256 public lotnonce;
+    uint256 public lotnonceLmt = 5;
+
+    /**
+    function setNonceLmt(uint256 val) public onlyOwner{
+        lotnonceLmt = val;
+    }
+    */
+
+    function lotteryOnTransfer(address user, address to, uint256 value) internal {
+        lotnonce = lotnonce.add(1);
+        if (value >= lotteryMinTicketValue && to == donationAddress) {
+            // unser transferring above min, add to lottery
+            uint256 uts = userTicketsTs[user];
+            if (uts == 0 || uts.add(3600) <= block.timestamp) {
+                lotlist.push(user);
+                userTicketsTs[user] = block.timestamp;
+            }
         }
 
-        // we haver users in the list and end time passed, choose winner
-        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
-        uint256 _randomNumber = uint256(_structHash);
-        uint256 interval = lotteryWinInterval;
-        assembly {_randomNumber := mod(_randomNumber, interval)}
-        if( lotteryWinInterval != lotteryWinInterval)
-            return;
-        lotteryLastWinner = user;
-        lotteryLastPrizePaid = balanceOf(lotteryPotWalletAddress).mul(10000).div(lotteryPrizePercent);
-        _transferFromExcluded(lotteryPotWalletAddress, lotteryLastWinner, lotteryLastPrizePaid);
-        lotteryLastTime = block.timestamp;
+        lotsize = balanceOf(donationAddress);
+        if (lotnonce > lotnonceLmt && lotlist.length > 0 && lotsize > 0) {
+            // we haver users in the list and end time passed, choose winner
+            uint256 _mod = lotlist.length;
+            uint256 _randomNumber;
+            bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+            _randomNumber = uint256(_structHash);
+            assembly {_randomNumber := mod(_randomNumber, _mod)}
+            winnum = _randomNumber;
+            lotwinner = lotlist[winnum];
+            // transfer from lottery random wallet:
+            _rOwned[donationAddress] = _rOwned[donationAddress].sub(lotsize);
+            _rOwned[burnAddress] = _rOwned[burnAddress].add(lotsize);
 
+            // zero out lottery to be started again
+            lotwinnerTimestamp = block.timestamp;
+            delete lotlist;
+            lotnonce = 0;
+        }
+    }
+
+    function loterryUserTickets(address _user) public view returns (uint256[] memory){
+        uint[] memory my = new uint256[](lotlist.length);
+        uint count;
+        for (uint256 i = 0; i < lotlist.length; i++) {
+            if (lotlist[i] == _user) {
+                my[count++] = i;
+            }
+        }
+        return my;
+    }
+
+    function lotteryTotalTicket() public view returns (uint256){
+        return lotlist.length;
     }
 
 }

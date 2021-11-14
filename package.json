@@ -7,8 +7,8 @@
     "testnet": "truffle migrate --network testnet --f 2 --to 2",
     "testnet-nft": "truffle migrate --network testnet --f 3 --to 3",
     "mainnet": "truffle migrate --network mainnet --f 2 --to 2",
-    "test": "truffle test test/token.js --network dev --show-events --stacktrace --bail",
-    "live": "truffle compile --all && nodemon --exec yarn test -e sol,js"
+    "test": "truffle compile --all && truffle test test/token.js --network dev --show-events --stacktrace --bail",
+    "live": "nodemon --exec yarn test -e sol,js"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.2.0",
