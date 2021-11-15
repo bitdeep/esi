@@ -299,14 +299,14 @@ describe('Bank', async function () {
                 let userInfo = await BANK.userinfo(dev);
                 const balanceOfBankIRON = await IRON.balanceOf(BANK.address);
                 let prizePoints = await BANK.lotrate(); // % of contract balance to pai to winner
-                let lotsize = await BANK.lotsize(); // amount of apollo used in buy/burn and paid as prize
+                let lotSize = await BANK.lotSize(); // amount of apollo used in buy/burn and paid as prize
                 const prizePct = prizePoints / 100; // just the %
                 const prize = (fromWei(balanceOfBankIRON) * prizePoints) / 10000;
 
                 const balanceOfDevIRON = await IRON.balanceOf(dev);
                 const balanceOfDevAPOLLO = await APOLLO.balanceOf(dev);
                 const mytickets = await BANK.mytickets(dev);
-                console.log(cyan('    - LOT=' + fromWei(lotsize) + ' PRIZE=' + prize + ' %=' + prizePct + ' TIME: END=' + endtime + " NOW=" + timenow + " SECONDS=" + seconds));
+                console.log(cyan('    - LOT=' + fromWei(lotSize) + ' PRIZE=' + prize + ' %=' + prizePct + ' TIME: END=' + endtime + " NOW=" + timenow + " SECONDS=" + seconds));
                 console.log(magenta('    - GLOBAL: IRON=' + fromWei(balanceOfBankIRON) + ' TOTAL BURN=' + fromWei(totalBurnt) + " DEPOSITED=" + fromWei(totalAmount) + " TICKETS=" + totalticket));
                 console.log(yellowBright('    - USER: BALANCE DEPOSITED=' + fromWei(userInfo.amount) + ' IRON=' + fromWei(balanceOfDevIRON) + " APOLLO=" + fromWei(balanceOfDevAPOLLO)) + " MY TICKETS=" + mytickets.join(","));
                 if (lotwinner != '0x0000000000000000000000000000000000000000') {

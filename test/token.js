@@ -117,10 +117,10 @@ describe('Bank', async function () {
             const uts = await TOKEN.userTicketsTs(user);
             const t = await TOKEN.lotteryTotalTicket();
             const ts = await TOKEN.lotwinnerTimestamp();
-            const ticket = await TOKEN.winnum();
-            const prize = await TOKEN.lotsize();
-            const lotnonce = await TOKEN.lotnonce();
-            const lotwinner = await TOKEN.lotwinner();
+            const ticket = await TOKEN.winNum();
+            const prize = await TOKEN.getLotSize();
+            const lotnonce = await TOKEN.lotNonce();
+            const lotwinner = await TOKEN.lotWinner();
             const balanceOfPot = await TOKEN.balanceOf(donation);
             const balanceOfWiner = await TOKEN.balanceOf(testA);
             yellow(title+' pot=' + fromGwei(balanceOfPot) + ' ba='+fromGwei(balanceOfWiner)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);

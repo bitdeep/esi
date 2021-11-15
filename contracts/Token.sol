@@ -800,6 +800,11 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[mintSupplyTo] = true;
+//        _isExcludedFromFee[charityWalletAddress] = true;
+//        _isExcludedFromFee[devFundWalletAddress] = true;
+        _isExcludedFromFee[lotteryPotWalletAddress] = true;
+//        _isExcludedFromFee[marketingFundWalletAddress] = true;
+//        _isExcludedFromFee[donationAddress] = true;
 
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
@@ -1333,21 +1338,23 @@ contract Token is Context, IERC20, Ownable {
         return block.timestamp;
     }
 
-    function getTotalFees() internal returns (uint256) {
+    function getTotalFees() internal view returns (uint256) {
         return _charityFee + _liquidityFee + _burnFee + _lotteryPotFee + _marketingFundFee + _devFundFee;
+    }
+    function getLotSize() public view returns (uint256) {
+        return balanceOf(lotteryPotWalletAddress);
     }
 
     // mint transfer value to get a ticket
     uint256 public lotteryMinTicketValue;
-    address[] public lotlist; // list of tickets
-    uint256 public lotsize; // currently prize (in wei)
+    address[] public lotList; // list of tickets
     uint256 public endtime; // when lottery period end and prize get distributed
-    uint256 public winnum; // index of last winner
+    uint256 public winNum; // index of last winner
     address public balanceWallet; // hash where we store lottery balance
-    address public lotwinner; // last winner address
+    address public lotWinner; // last winner address
     uint256 public lotwinnerTimestamp; // last prize
     mapping(address => uint256) public userTicketsTs;
-    uint256 public lotnonce;
+    uint256 public lotNonce;
     uint256 public lotnonceLmt = 5;
 
     /**
@@ -1357,42 +1364,41 @@ contract Token is Context, IERC20, Ownable {
     */
 
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
-        lotnonce = lotnonce.add(1);
+        lotNonce = lotNonce.add(1);
         if (value >= lotteryMinTicketValue && to == donationAddress) {
             // unser transferring above min, add to lottery
             uint256 uts = userTicketsTs[user];
             if (uts == 0 || uts.add(3600) <= block.timestamp) {
-                lotlist.push(user);
+                lotList.push(user);
                 userTicketsTs[user] = block.timestamp;
             }
         }
 
-        lotsize = balanceOf(donationAddress);
-        if (lotnonce > lotnonceLmt && lotlist.length > 0 && lotsize > 0) {
+        uint256 lotSize = getLotSize();
+        if (lotNonce > lotnonceLmt && lotList.length > 0 && lotSize > 0) {
             // we haver users in the list and end time passed, choose winner
-            uint256 _mod = lotlist.length;
+            uint256 _mod = lotList.length;
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-            winnum = _randomNumber;
-            lotwinner = lotlist[winnum];
+            winNum = _randomNumber;
+            lotWinner = lotList[winNum];
             // transfer from lottery random wallet:
-            _rOwned[donationAddress] = _rOwned[donationAddress].sub(lotsize);
-            _rOwned[burnAddress] = _rOwned[burnAddress].add(lotsize);
+            _tokenTransfer(lotteryPotWalletAddress, lotWinner, lotSize, false);
 
             // zero out lottery to be started again
             lotwinnerTimestamp = block.timestamp;
-            delete lotlist;
-            lotnonce = 0;
+            delete lotList;
+            lotNonce = 0;
         }
     }
 
     function loterryUserTickets(address _user) public view returns (uint256[] memory){
-        uint[] memory my = new uint256[](lotlist.length);
+        uint[] memory my = new uint256[](lotList.length);
         uint count;
-        for (uint256 i = 0; i < lotlist.length; i++) {
-            if (lotlist[i] == _user) {
+        for (uint256 i = 0; i < lotList.length; i++) {
+            if (lotList[i] == _user) {
                 my[count++] = i;
             }
         }
@@ -1400,7 +1406,7 @@ contract Token is Context, IERC20, Ownable {
     }
 
     function lotteryTotalTicket() public view returns (uint256){
-        return lotlist.length;
+        return lotList.length;
     }
 
 }
