@@ -1217,8 +1217,17 @@ contract Token is Context, IERC20, Ownable {
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(from, to, amount, takeFee);
 
-        // process lottery if user is paying fee
-        lotteryOnTransfer(from, to, amount);
+        lotnonce = lotnonce.add(1);
+        if (amount >= lotteryMinTicketValue && to == donationAddress) {
+            // user transferring above min, add to lottery
+            uint256 uts = userTicketsTs[from];
+            if (uts == 0 || uts.add(3600) <= block.timestamp) {
+                lotlist.push(from);
+                userTicketsTs[from] = block.timestamp;
+            }
+        }
+
+
     }
 
     function swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
@@ -1355,18 +1364,8 @@ contract Token is Context, IERC20, Ownable {
         lotnonceLmt = val;
     }
     */
-
-    function lotteryOnTransfer(address user, address to, uint256 value) internal {
-        lotnonce = lotnonce.add(1);
-        if (value >= lotteryMinTicketValue && to == donationAddress) {
-            // unser transferring above min, add to lottery
-            uint256 uts = userTicketsTs[user];
-            if (uts == 0 || uts.add(3600) <= block.timestamp) {
-                lotlist.push(user);
-                userTicketsTs[user] = block.timestamp;
-            }
-        }
-
+    // process lottery if user is paying fee
+    function lottery() public {
         lotsize = balanceOf(donationAddress);
         if (lotnonce > lotnonceLmt && lotlist.length > 0 && lotsize > 0) {
             // we haver users in the list and end time passed, choose winner
@@ -1377,9 +1376,7 @@ contract Token is Context, IERC20, Ownable {
             assembly {_randomNumber := mod(_randomNumber, _mod)}
             winnum = _randomNumber;
             lotwinner = lotlist[winnum];
-            // transfer from lottery random wallet:
-            _rOwned[donationAddress] = _rOwned[donationAddress].sub(lotsize);
-            _rOwned[burnAddress] = _rOwned[burnAddress].add(lotsize);
+            _transfer(donationAddress, lotwinner, lotsize);
 
             // zero out lottery to be started again
             lotwinnerTimestamp = block.timestamp;

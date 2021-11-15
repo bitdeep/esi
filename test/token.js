@@ -109,9 +109,8 @@ describe('Bank', async function () {
         this.timeout(60000);
         await time.increase(hours(72));
         const TOKEN = this.token;
+        const donationAddress = await TOKEN.donationAddress();
 
-        const donation = '0x000000000000000000000000000000000000000d';
-        const testA = '0x000000000000000000000000000000000000000A';
         async function dump(title) {
             const tickets = await TOKEN.loterryUserTickets(user);
             const uts = await TOKEN.userTicketsTs(user);
@@ -121,23 +120,23 @@ describe('Bank', async function () {
             const prize = await TOKEN.lotsize();
             const lotnonce = await TOKEN.lotnonce();
             const lotwinner = await TOKEN.lotwinner();
-            const balanceOfPot = await TOKEN.balanceOf(donation);
-            const balanceOfWiner = await TOKEN.balanceOf(testA);
-            yellow(title+' pot=' + fromGwei(balanceOfPot) + ' ba='+fromGwei(balanceOfWiner)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);
+            const balanceOfPot = await TOKEN.balanceOf(donationAddress);
+            const balanceOfWiner = await TOKEN.balanceOf(lotwinner);
+            yellow(title+' pot=' + fromGwei(balanceOfPot) + ' winner='+fromGwei(balanceOfWiner)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);
         }
 
-        magenta('set random to 10');
-        // await this.token.setNonceLmt('4', {from: dev});
-
         await this.token.transfer(user, MINTED, {from: devaddr}); await dump('0');
-        await this.token.transfer(donation, CEM, {from: user}); await dump(1);
+        await this.token.transfer(donationAddress, CEM, {from: user}); await dump(1);
         await time.increase(hours(72));
-        await this.token.transfer(donation, CEM, {from: user}); await dump(2);
+        await this.token.transfer(donationAddress, CEM, {from: user}); await dump(2);
         await time.increase(hours(72));
-        await this.token.transfer(donation, CEM, {from: user}); await dump(2);
+        await this.token.transfer(donationAddress, CEM, {from: user}); await dump(2);
         await time.increase(hours(72));
+        await this.token.lottery({from: user});
         await this.token.transfer(user1, CEM, {from: user}); await dump(5);
+        await this.token.lottery({from: user});
         await this.token.transfer(user1, CEM, {from: user}); await dump(6);
+        await this.token.lottery({from: user});
 
     });
 
