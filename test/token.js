@@ -122,7 +122,8 @@ describe('Bank', async function () {
             const lotwinner = await TOKEN.lotwinner();
             const balanceOfPot = await TOKEN.balanceOf(donationAddress);
             const balanceOfWiner = await TOKEN.balanceOf(lotwinner);
-            yellow(title+' pot=' + fromGwei(balanceOfPot) + ' winner='+fromGwei(balanceOfWiner)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);
+            const balanceOfUser = await TOKEN.balanceOf(user);
+            yellow(title+' pot=' + fromGwei(balanceOfPot) + ' winner='+fromGwei(balanceOfWiner)+' user='+fromGwei(balanceOfUser)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);
         }
 
         await this.token.transfer(user, MINTED, {from: devaddr}); await dump('0');
@@ -134,8 +135,6 @@ describe('Bank', async function () {
         await time.increase(hours(72));
         await this.token.lottery({from: user});
         await this.token.transfer(user1, CEM, {from: user}); await dump(5);
-        await this.token.lottery({from: user});
-        await this.token.transfer(user1, CEM, {from: user}); await dump(6);
         await this.token.lottery({from: user});
 
     });
