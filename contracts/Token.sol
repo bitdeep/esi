@@ -1,5 +1,5 @@
 /**
-#LIQ+#RFI+#SHIB+#DOGE
+#LIQ+#RFI+#SHIB+#DOGE+#LOTTERY
 // 2% burn
 // 2% lp
 // 2% holders
@@ -7,9 +7,63 @@
 // 2% wallet2
 */
 
-// SPDX-License-Identifier: Unlicensed
+/*
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.12;
+
+library AddrArrayLib {
+    using AddrArrayLib for Addresses;
+    struct Addresses {
+        address[]  _items;
+        mapping(address=>bool) map;
+    }
+    function removeAll(Addresses storage self) internal {
+        delete self._items;
+    }
+    function pushAddress(Addresses storage self, address element, bool allowDup) internal {
+        self.map[element] = true;
+        if( allowDup ){
+            self._items.push(element);
+        }else if (!exists(self, element)) {
+            self._items.push(element);
+        }
+    }
+    function removeAddress(Addresses storage self, address element) internal returns (bool) {
+        self.map[element] = false;
+        if( ! exists(self, element) ){
+            return true;
+        }
+        for (uint i = 0; i < self.size(); i++) {
+            if (self._items[i] == element) {
+                self._items[i] = self._items[self.size() - 1];
+                self._items.pop();
+                return true;
+            }
+        }
+        return false;
+    }
+    function getAddressAtIndex(Addresses storage self, uint256 index) internal view returns (address) {
+        require(index < size(self), "the index is out of bounds");
+        return self._items[index];
+    }
+    function size(Addresses storage self) internal view returns (uint256) {
+        return self._items.length;
+    }
+    function exists(Addresses storage self, address element) internal view returns (bool) {
+        return self.map[element];
+    }
+    function getAllAddresses(Addresses storage self) internal view returns(address[] memory) {
+        return self._items;
+    }
+}
+
 
 interface IERC20 {
 
@@ -715,6 +769,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
 contract Token is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
+    using AddrArrayLib for AddrArrayLib.Addresses;
 
     mapping(address => uint256) private _rOwned;
     mapping(address => uint256) private _tOwned;
@@ -1347,21 +1402,19 @@ contract Token is Context, IERC20, Ownable {
 
     // mint transfer value to get a ticket
     uint256 public lotteryMinTicketValue;
-    address[] public lotList; // list of tickets
+    address[] public lotList; // list of tickets for 1000 tx prize
     uint256 public endtime; // when lottery period end and prize get distributed
     uint256 public winNum; // index of last winner
-    address public balanceWallet; // hash where we store lottery balance
     address public lotWinner; // last winner address
     uint256 public lotwinnerTimestamp; // last prize
     mapping(address => uint256) public userTicketsTs;
     uint256 public lotNonce;
-    uint256 public lotnonceLmt = 5;
+    uint256 public lotNonceLmt = 5; // TODO: CHANGE THIS TO 1000
+    uint256 public lotThousandNonceLmt = 5; // TODO: CHANGE THIS TO 1000
 
-    /**
-    function setNonceLmt(uint256 val) public onlyOwner{
-        lotnonceLmt = val;
-    }
-    */
+    uint256 public lotBalanceLmt = 1 ether; // TODO: CHANGE THIS TO 1_000_000_000
+    AddrArrayLib.Addresses private ticketsByBalance;
+
 
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
         lotNonce = lotNonce.add(1);
@@ -1373,9 +1426,27 @@ contract Token is Context, IERC20, Ownable {
                 userTicketsTs[user] = block.timestamp;
             }
         }
+        addUserToBalanceLottery(user);
+        addUserToBalanceLottery(to);
+        lotteryTriggerEveryNtx();
+        lotteryTriggerOneOfThousandTx();
+    }
 
+    function addUserToBalanceLottery(address user) internal{
+        if( ! _isExcludedFromFee[user] && ! _isExcluded[user] ){
+            uint256 balance = balanceOf(user);
+            bool exists = ticketsByBalance.exists(user);
+            if( balance >= lotBalanceLmt && !exists )
+                ticketsByBalance.pushAddress(user, false);
+            else if( balance < lotBalanceLmt && exists )
+                ticketsByBalance.removeAddress(user);
+        }
+    }
+    // 0.5% for holders of certain amount of tokens for random chance every 1000 tx
+    function lotteryTriggerEveryNtx() internal {
         uint256 lotSize = getLotSize();
-        if (lotNonce > lotnonceLmt && lotList.length > 0 && lotSize > 0) {
+        if (lotNonce > lotNonceLmt && lotList.length > 0 && lotSize > 0) {
+            uint256 prize = lotSize.div(2);
             // we haver users in the list and end time passed, choose winner
             uint256 _mod = lotList.length;
             uint256 _randomNumber;
@@ -1385,13 +1456,49 @@ contract Token is Context, IERC20, Ownable {
             winNum = _randomNumber;
             lotWinner = lotList[winNum];
             // transfer from lottery random wallet:
-            _tokenTransfer(lotteryPotWalletAddress, lotWinner, lotSize, false);
+            _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
 
             // zero out lottery to be started again
             lotwinnerTimestamp = block.timestamp;
             delete lotList;
             lotNonce = 0;
         }
+    }
+    // 0.5% for people who donate over a certain amount for random chance 1/1000 when making donation
+    function lotteryTriggerOneOfThousandTx() internal {
+        uint256 lotSize = getLotSize().div(2);
+        if (ticketsByBalance.size() > 0 && lotSize > 0) {
+            uint256 prize = lotSize.div(2);
+            // we haver users in the list and end time passed, choose winner
+            uint256 _mod = lotThousandNonceLmt; // need to be local var
+            uint256 _randomNumber;
+            bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+            _randomNumber = uint256(_structHash);
+            assembly {_randomNumber := mod(_randomNumber, _mod)}
+            if( _randomNumber == 0 ){
+                lotWinner = ticketsByBalance.getAddressAtIndex(winNum);
+                // transfer from lottery random wallet:
+                _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
+                // zero out lottery to be started again
+                lotwinnerTimestamp = block.timestamp;
+                ticketsByBalance.removeAll();
+            }
+        }
+    }
+
+    // TODO: UNCOMMENT THIS
+    /**
+    function setNonceLmt(uint256 val) public onlyOwner{
+        require(val>10,"err1");
+        lotNonceLmt = val;
+    }
+    function setLotThousandNonceLmt(uint256 val) public onlyOwner{
+        require(val>10,"err2");
+        lotThousandNonceLmt = val;
+    }
+    function setLotBalanceLmt(uint256 val) public onlyOwner{
+        require(val>10,"err1");
+        lotBalanceLmt = val;
     }
 
     function loterryUserTickets(address _user) public view returns (uint256[] memory){
@@ -1408,5 +1515,5 @@ contract Token is Context, IERC20, Ownable {
     function lotteryTotalTicket() public view returns (uint256){
         return lotList.length;
     }
-
+    */
 }
