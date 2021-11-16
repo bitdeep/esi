@@ -90,7 +90,7 @@ describe('Bank', async function () {
         await this.router.init(this.factory.address, this.weth.address, {from: dev});
 
         green('create token');
-        this.token = await Token.new(reserve, this.router.address, {from: dev, gasPrice: 0, gas: 6000000});
+        this.token = await Token.new(reserve, this.router.address, {from: dev});
 
         this.pairAddr = await this.factory.getPair(this.token.address, this.weth.address);
         this.pair = await IUniswapV2Pair.at(this.pairAddr);

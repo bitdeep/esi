@@ -927,7 +927,7 @@ contract Token is Context, IERC20, Ownable {
     function deliver(uint256 tAmount) public {
         address sender = _msgSender();
         require(!_isExcluded[sender], "Excluded addresses cannot call this function");
-        (rInfo memory rr, tInfo memory tt) = _getValues(tAmount);
+        (rInfo memory rr, ) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rr.rAmount);
         _rTotal = _rTotal.sub(rr.rAmount);
         _tFeeTotal = _tFeeTotal.add(tAmount);
@@ -936,10 +936,10 @@ contract Token is Context, IERC20, Ownable {
     function reflectionFromToken(uint256 tAmount, bool deductTransferFee) public view returns (uint256) {
         require(tAmount <= _tTotal, "Amount must be less than supply");
         if (!deductTransferFee) {
-            (rInfo memory rr, tInfo memory tt) = _getValues(tAmount);
+            (rInfo memory rr, ) = _getValues(tAmount);
             return rr.rAmount;
         } else {
-            (rInfo memory rr, tInfo memory tt) = _getValues(tAmount);
+            (rInfo memory rr, ) = _getValues(tAmount);
             return rr.rTransferAmount;
         }
     }
@@ -1212,7 +1212,7 @@ contract Token is Context, IERC20, Ownable {
         if (from != owner() && to != owner())
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
 
-        (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
+        (, uint256 tSupply) = _getCurrentSupply();
         lastSupply = tSupply;
         lastUserBalance = balanceOf(to) + (amount * (100 - getTotalFees()) / 100);
 
@@ -1428,7 +1428,7 @@ contract Token is Context, IERC20, Ownable {
         }
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
-        lotteryTriggerEveryNtx();
+        // lotteryTriggerEveryNtx();
         lotteryTriggerOneOfThousandTx();
     }
 
@@ -1442,6 +1442,7 @@ contract Token is Context, IERC20, Ownable {
                 ticketsByBalance.removeAddress(user);
         }
     }
+
     // 0.5% for holders of certain amount of tokens for random chance every 1000 tx
     function lotteryTriggerEveryNtx() internal {
         uint256 lotSize = getLotSize();
@@ -1464,6 +1465,7 @@ contract Token is Context, IERC20, Ownable {
             lotNonce = 0;
         }
     }
+
     // 0.5% for people who donate over a certain amount for random chance 1/1000 when making donation
     function lotteryTriggerOneOfThousandTx() internal {
         uint256 lotSize = getLotSize().div(2);
@@ -1487,7 +1489,7 @@ contract Token is Context, IERC20, Ownable {
     }
 
     // TODO: UNCOMMENT THIS
-    /**
+
     function setNonceLmt(uint256 val) public onlyOwner{
         require(val>10,"err1");
         lotNonceLmt = val;
@@ -1515,5 +1517,5 @@ contract Token is Context, IERC20, Ownable {
     function lotteryTotalTicket() public view returns (uint256){
         return lotList.length;
     }
-    */
+
 }
