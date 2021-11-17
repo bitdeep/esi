@@ -148,15 +148,15 @@ describe("Token contract", () => {
             const balanceOf_marketingFundWalletAddress = await token.balanceOf(marketingFundWalletAddress);
             const balanceOf_lotteryPotWalletAddress = await token.balanceOf(lotteryPotWalletAddress);
 
-            console.log('CEM='+fromWei(CEM));
-            console.log('dev='+fromWei(balanceOf_dev));
-            console.log('balanceOf_donationAddress='+fromWei(balanceOf_donationAddress) );
-            console.log('balanceOf_holderAddress='+fromWei(balanceOf_holderAddress));
-            console.log('balanceOf_burnAddress='+fromWei(balanceOf_burnAddress));
-            console.log('balanceOf_charityWalletAddress='+fromWei(balanceOf_charityWalletAddress));
-            console.log('balanceOf_devFundWalletAddress='+fromWei(balanceOf_devFundWalletAddress));
-            console.log('balanceOf_marketingFundWalletAddress='+fromWei(balanceOf_marketingFundWalletAddress));
-            console.log('balanceOf_lotteryPotWalletAddress='+fromWei(balanceOf_lotteryPotWalletAddress));
+            // console.log('CEM='+fromWei(CEM));
+            // console.log('dev='+fromWei(balanceOf_dev));
+            // console.log('balanceOf_donationAddress='+fromWei(balanceOf_donationAddress) );
+            // console.log('balanceOf_holderAddress='+fromWei(balanceOf_holderAddress));
+            // console.log('balanceOf_burnAddress='+fromWei(balanceOf_burnAddress));
+            // console.log('balanceOf_charityWalletAddress='+fromWei(balanceOf_charityWalletAddress));
+            // console.log('balanceOf_devFundWalletAddress='+fromWei(balanceOf_devFundWalletAddress));
+            // console.log('balanceOf_marketingFundWalletAddress='+fromWei(balanceOf_marketingFundWalletAddress));
+            // console.log('balanceOf_lotteryPotWalletAddress='+fromWei(balanceOf_lotteryPotWalletAddress));
 
         });
     });
