@@ -1104,8 +1104,16 @@ contract Token is Context, IERC20, Ownable {
         tt.tBurn = calculateBurnFee(tAmount);
         tt.tLiquidity = calculateLiquidityFee(tAmount);
         tt.tHolderFee = calculateHolderFee(tAmount);
-        uint256 amount = tAmount.sub(tt.tDistributionFee).sub(tt.tCharityFee).sub(tt.tDevFundFee);
-        tt.tTransferAmount = amount.sub(tt.tMarketingFundFee).sub(tt.tLotteryPotFee).sub(tt.tBurn).sub(tt.tLiquidity).sub(tt.tHolderFee);
+        uint256 amount = tAmount;
+        amount = amount.sub(tt.tDistributionFee).sub(tt.tCharityFee).sub(tt.tDevFundFee);
+        amount = amount.sub(tt.tMarketingFundFee).sub(tt.tLotteryPotFee).sub(tt.tBurn);
+        amount = amount.sub(tt.tLiquidity).sub(tt.tHolderFee);
+        tt.tTransferAmount = amount;
+
+        console.log('tt.tDistributionFee=%s _distributionFee', tt.tDistributionFee,_distributionFee);
+        console.log('tAmount=%s', tAmount);
+        console.log('amount=%s', amount);
+
         return tt;
     }
 
@@ -1121,8 +1129,11 @@ contract Token is Context, IERC20, Ownable {
         rr.rBurn = tBurn.mul(currentRate);
         rr.rLiquidity = tLiquidity.mul(currentRate);
         rr.rHolderFee = rHolderFee.mul(currentRate);
-        rr.rTransferAmount = rr.rAmount.sub(rr.rDistributionFee).sub(rr.rCharityFee).sub(rr.rDevFundFee)
-        .sub(rr.rMarketingFundFee).sub(rr.rLotteryPotFee).sub(rr.rBurn).sub(rr.rLiquidity);
+        uint amount = rr.rAmount;
+             amount = amount.sub(rr.rDistributionFee).sub(rr.rCharityFee).sub(rr.rDevFundFee);
+             amount = amount.sub(rr.rMarketingFundFee).sub(rr.rLotteryPotFee).sub(rr.rBurn).sub(rr.rLiquidity);
+             amount = amount.sub(rr.rHolderFee);
+        rr.rTransferAmount = amount;
         return rr;
     }
 
@@ -1152,7 +1163,7 @@ contract Token is Context, IERC20, Ownable {
     }
 
     function calculateDistributionFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_distributionFee).div(1000);
+        return _amount.mul(_distributionFee).div(10**2);
     }
 
     function calculateCharityFee(uint256 _amount) private view returns (uint256) {
@@ -1389,6 +1400,8 @@ contract Token is Context, IERC20, Ownable {
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
         (rInfo memory rr, tInfo memory tt) = _getValues(tAmount);
+        console.log('rAmount=%s', rr.rAmount);
+        console.log('rTransferAmount=%s', rr.rTransferAmount);
         _rOwned[sender] = _rOwned[sender].sub(rr.rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rr.rTransferAmount);
         _takeLiquidity(tt.tLiquidity);

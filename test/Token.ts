@@ -61,6 +61,7 @@ describe("Token contract", () => {
     });
     describe("Lottery", () => {
         it("lottery", async () => {
+            /*
             const donation: string = '0x000000000000000000000000000000000000000d';
 
             async function dump(title: string, usr:string) {
@@ -96,7 +97,7 @@ describe("Token contract", () => {
             const b = await token.balanceOf(user);
             await token.connect(USER).transfer(user1, b);
             console.log(  (await token.getTicketsByBalance()) );
-
+*/
             // dump('USER donation', user);
 /*
             await token.connect(USER1).transfer(donation, CEM);
@@ -121,6 +122,42 @@ describe("Token contract", () => {
             await token.connect(USER3).transfer(user1, CEM);
             dump('tr USER3', user3);
 */
+        });
+
+
+
+        it("balances", async () => {
+
+            await token.transfer(user, CEM);
+            await token.connect(USER).transfer(user1, CEM);
+
+            const donationAddress:string = await token.donationAddress();
+            const holderAddress:string = await token.holderAddress();
+            const burnAddress:string = await token.burnAddress();
+            const charityWalletAddress:string = await token.charityWalletAddress();
+            const devFundWalletAddress:string = await token.devFundWalletAddress();
+            const marketingFundWalletAddress:string = await token.marketingFundWalletAddress();
+            const lotteryPotWalletAddress:string = await token.lotteryPotWalletAddress();
+
+            const balanceOf_dev = await token.balanceOf(dev);
+            const balanceOf_donationAddress = await token.balanceOf(donationAddress);
+            const balanceOf_holderAddress = await token.balanceOf(holderAddress);
+            const balanceOf_burnAddress = await token.balanceOf(burnAddress);
+            const balanceOf_charityWalletAddress = await token.balanceOf(charityWalletAddress);
+            const balanceOf_devFundWalletAddress = await token.balanceOf(devFundWalletAddress);
+            const balanceOf_marketingFundWalletAddress = await token.balanceOf(marketingFundWalletAddress);
+            const balanceOf_lotteryPotWalletAddress = await token.balanceOf(lotteryPotWalletAddress);
+
+            console.log('CEM='+fromWei(CEM));
+            console.log('dev='+fromWei(balanceOf_dev));
+            console.log('balanceOf_donationAddress='+fromWei(balanceOf_donationAddress) );
+            console.log('balanceOf_holderAddress='+fromWei(balanceOf_holderAddress));
+            console.log('balanceOf_burnAddress='+fromWei(balanceOf_burnAddress));
+            console.log('balanceOf_charityWalletAddress='+fromWei(balanceOf_charityWalletAddress));
+            console.log('balanceOf_devFundWalletAddress='+fromWei(balanceOf_devFundWalletAddress));
+            console.log('balanceOf_marketingFundWalletAddress='+fromWei(balanceOf_marketingFundWalletAddress));
+            console.log('balanceOf_lotteryPotWalletAddress='+fromWei(balanceOf_lotteryPotWalletAddress));
+
         });
     });
 });
