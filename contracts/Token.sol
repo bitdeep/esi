@@ -15,51 +15,59 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-
+import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
     using AddrArrayLib for Addresses;
     struct Addresses {
-        address[]  _items;
-        mapping(address=>bool) map;
+        address[] _items;
+        mapping(address => int) map;
     }
+
     function removeAll(Addresses storage self) internal {
         delete self._items;
     }
+
     function pushAddress(Addresses storage self, address element, bool allowDup) internal {
-        self.map[element] = true;
-        if( allowDup ){
+        if (allowDup) {
             self._items.push(element);
-        }else if (!exists(self, element)) {
+            self.map[element] = 2;
+        } else if (!exists(self, element)) {
             self._items.push(element);
+            self.map[element] = 2;
         }
     }
+
     function removeAddress(Addresses storage self, address element) internal returns (bool) {
-        self.map[element] = false;
-        if( ! exists(self, element) ){
+        if (!exists(self, element)) {
             return true;
         }
         for (uint i = 0; i < self.size(); i++) {
             if (self._items[i] == element) {
                 self._items[i] = self._items[self.size() - 1];
                 self._items.pop();
+                self.map[element] = 1;
                 return true;
             }
         }
         return false;
     }
+
     function getAddressAtIndex(Addresses storage self, uint256 index) internal view returns (address) {
         require(index < size(self), "the index is out of bounds");
         return self._items[index];
     }
+
     function size(Addresses storage self) internal view returns (uint256) {
         return self._items.length;
     }
+
     function exists(Addresses storage self, address element) internal view returns (bool) {
-        return self.map[element];
+        return self.map[element] == 2;
     }
-    function getAllAddresses(Addresses storage self) internal view returns(address[] memory) {
+
+    function getAllAddresses(Addresses storage self) internal view returns (address[] memory) {
         return self._items;
     }
 }
@@ -790,31 +798,35 @@ contract Token is Context, IERC20, Ownable {
     uint8 private _decimals = 9;
 
     address public donationAddress = 0x000000000000000000000000000000000000000d;
+    address public holderAddress = 0x000000000000000000000000000000000000000E;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0xEddC9dAFDC8e01700a8Ede256F7efe07eDE29A72;
     address public devFundWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
     address public marketingFundWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
     address public lotteryPotWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
 
-    uint256 public _burnFee = 1;
+    uint256 public _burnFee = 10; //1%
     uint256 private _previousBurnFee = _burnFee;
 
-    uint256 public _distributionFee = 1;
+    uint256 public _distributionFee = 10; //1%
     uint256 private _previousDistributionFee = _distributionFee;
 
-    uint256 public _charityFee = 2;
+    uint256 public _charityFee = 20; //2%
     uint256 private _previousCharityFee = _charityFee;
 
-    uint256 public _devFundFee = 1;
+    uint256 public _devFundFee = 10; //1%
     uint256 private _previousDevFundFee = _devFundFee;
 
-    uint256 public _marketingFundFee = 2;
+    uint256 public _marketingFundFee = 20; //2%
     uint256 private _previousMarketingFundFee = _marketingFundFee;
 
-    uint256 public _lotteryPotFee = 1;
+    uint256 public _lotteryPotFee = 5; //0.5%
     uint256 private _previousLotteryPotFee = _lotteryPotFee;
 
-    uint256 public _liquidityFee = 1;
+    uint256 public _lotteryHolderFee = 5; //0.5%
+    uint256 private _previousLotteryHolderFee = _lotteryHolderFee;
+
+    uint256 public _liquidityFee = 10; //1%
     uint256 private _previousLiquidityFee = _liquidityFee;
 
     IUniswapV2Router02 public immutable uniswapV2Router;
@@ -855,14 +867,10 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[mintSupplyTo] = true;
-//        _isExcludedFromFee[charityWalletAddress] = true;
-//        _isExcludedFromFee[devFundWalletAddress] = true;
         _isExcludedFromFee[lotteryPotWalletAddress] = true;
-//        _isExcludedFromFee[marketingFundWalletAddress] = true;
-//        _isExcludedFromFee[donationAddress] = true;
 
         emit Transfer(address(0), mintSupplyTo, _tTotal);
-
+        lotList.push(burnAddress);
     }
 
     function name() public view returns (string memory) {
@@ -927,7 +935,7 @@ contract Token is Context, IERC20, Ownable {
     function deliver(uint256 tAmount) public {
         address sender = _msgSender();
         require(!_isExcluded[sender], "Excluded addresses cannot call this function");
-        (rInfo memory rr, ) = _getValues(tAmount);
+        (rInfo memory rr,) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rr.rAmount);
         _rTotal = _rTotal.sub(rr.rAmount);
         _tFeeTotal = _tFeeTotal.add(tAmount);
@@ -936,10 +944,10 @@ contract Token is Context, IERC20, Ownable {
     function reflectionFromToken(uint256 tAmount, bool deductTransferFee) public view returns (uint256) {
         require(tAmount <= _tTotal, "Amount must be less than supply");
         if (!deductTransferFee) {
-            (rInfo memory rr, ) = _getValues(tAmount);
+            (rInfo memory rr,) = _getValues(tAmount);
             return rr.rAmount;
         } else {
-            (rInfo memory rr, ) = _getValues(tAmount);
+            (rInfo memory rr,) = _getValues(tAmount);
             return rr.rTransferAmount;
         }
     }
@@ -1036,14 +1044,17 @@ contract Token is Context, IERC20, Ownable {
 
     function _reflectFee(rInfo memory rr, tInfo memory tt) private {
         _rTotal = _rTotal.sub(rr.rDistributionFee);
-        //.sub(rr.rFee1).sub(rr.rFee2).sub(rr.rBurn);
-        _tFeeTotal = _tFeeTotal.add(tt.tDistributionFee).add(tt.tCharityFee).add(tt.tDevFundFee).add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn);
+        _tFeeTotal = _tFeeTotal.add(tt.tDistributionFee).add(tt.tCharityFee).add(tt.tDevFundFee)
+        .add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn).add(tt.tHolderFee);
+
+        _rOwned[holderAddress] = _rOwned[holderAddress].add(rr.rHolderFee);
         _rOwned[charityWalletAddress] = _rOwned[charityWalletAddress].add(rr.rCharityFee);
         _rOwned[devFundWalletAddress] = _rOwned[devFundWalletAddress].add(rr.rDevFundFee);
         _rOwned[marketingFundWalletAddress] = _rOwned[marketingFundWalletAddress].add(rr.rMarketingFundFee);
         _rOwned[lotteryPotWalletAddress] = _rOwned[lotteryPotWalletAddress].add(rr.rLotteryPotFee);
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
 
+        emit Transfer(msg.sender, holderAddress, rr.rHolderFee);
         emit Transfer(msg.sender, charityWalletAddress, rr.rCharityFee);
         emit Transfer(msg.sender, devFundWalletAddress, rr.rDevFundFee);
         emit Transfer(msg.sender, marketingFundWalletAddress, rr.rMarketingFundFee);
@@ -1061,6 +1072,7 @@ contract Token is Context, IERC20, Ownable {
         uint256 tMarketingFundFee;
         uint256 tLotteryPotFee;
         uint256 tBurn;
+        uint256 tHolderFee;
     }
 
     struct rInfo {
@@ -1073,11 +1085,13 @@ contract Token is Context, IERC20, Ownable {
         uint256 rLotteryPotFee;
         uint256 rBurn;
         uint256 rLiquidity;
+        uint256 rHolderFee;
     }
 
     function _getValues(uint256 tAmount) private view returns (rInfo memory rr, tInfo memory tt) {
         tt = _getTValues(tAmount);
-        rr = _getRValues(tAmount, tt.tDistributionFee, tt.tCharityFee, tt.tDevFundFee, tt.tMarketingFundFee, tt.tLotteryPotFee, tt.tBurn, tt.tLiquidity, _getRate());
+        rr = _getRValues(tAmount, tt.tDistributionFee, tt.tCharityFee, tt.tDevFundFee, tt.tMarketingFundFee,
+            tt.tLotteryPotFee, tt.tBurn, tt.tHolderFee, tt.tLiquidity, _getRate());
         return (rr, tt);
     }
 
@@ -1089,11 +1103,15 @@ contract Token is Context, IERC20, Ownable {
         tt.tLotteryPotFee = calculateLotteryPotFee(tAmount);
         tt.tBurn = calculateBurnFee(tAmount);
         tt.tLiquidity = calculateLiquidityFee(tAmount);
-        tt.tTransferAmount = tAmount.sub(tt.tDistributionFee).sub(tt.tCharityFee).sub(tt.tDevFundFee).sub(tt.tMarketingFundFee).sub(tt.tLotteryPotFee).sub(tt.tBurn).sub(tt.tLiquidity);
+        tt.tHolderFee = calculateHolderFee(tAmount);
+        uint256 amount = tAmount.sub(tt.tDistributionFee).sub(tt.tCharityFee).sub(tt.tDevFundFee);
+        tt.tTransferAmount = amount.sub(tt.tMarketingFundFee).sub(tt.tLotteryPotFee).sub(tt.tBurn).sub(tt.tLiquidity).sub(tt.tHolderFee);
         return tt;
     }
 
-    function _getRValues(uint256 tAmount, uint256 tDistributionFee, uint256 tCharityFee, uint256 tDevFundFee, uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 tLiquidity, uint256 currentRate) private pure returns (rInfo memory rr) {
+    function _getRValues(uint256 tAmount, uint256 tDistributionFee, uint256 tCharityFee, uint256 tDevFundFee,
+        uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 rHolderFee, uint256 tLiquidity,
+        uint256 currentRate) private pure returns (rInfo memory rr) {
         rr.rAmount = tAmount.mul(currentRate);
         rr.rDistributionFee = tDistributionFee.mul(currentRate);
         rr.rCharityFee = tCharityFee.mul(currentRate);
@@ -1102,7 +1120,9 @@ contract Token is Context, IERC20, Ownable {
         rr.rLotteryPotFee = tLotteryPotFee.mul(currentRate);
         rr.rBurn = tBurn.mul(currentRate);
         rr.rLiquidity = tLiquidity.mul(currentRate);
-        rr.rTransferAmount = rr.rAmount.sub(rr.rDistributionFee).sub(rr.rCharityFee).sub(rr.rDevFundFee).sub(rr.rMarketingFundFee).sub(rr.rLotteryPotFee).sub(rr.rBurn).sub(rr.rLiquidity);
+        rr.rHolderFee = rHolderFee.mul(currentRate);
+        rr.rTransferAmount = rr.rAmount.sub(rr.rDistributionFee).sub(rr.rCharityFee).sub(rr.rDevFundFee)
+        .sub(rr.rMarketingFundFee).sub(rr.rLotteryPotFee).sub(rr.rBurn).sub(rr.rLiquidity);
         return rr;
     }
 
@@ -1132,31 +1152,35 @@ contract Token is Context, IERC20, Ownable {
     }
 
     function calculateDistributionFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_distributionFee).div(10 ** 2);
+        return _amount.mul(_distributionFee).div(1000);
     }
 
     function calculateCharityFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_charityFee).div(10 ** 2);
+        return _amount.mul(_charityFee).div(1000);
     }
 
     function calculateDevFundFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_devFundFee).div(10 ** 2);
+        return _amount.mul(_devFundFee).div(1000);
     }
 
     function calculateMarketingFundFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_marketingFundFee).div(10 ** 2);
+        return _amount.mul(_marketingFundFee).div(1000);
     }
 
     function calculateLotteryPotFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_lotteryPotFee).div(10 ** 2);
+        return _amount.mul(_lotteryPotFee).div(1000);
     }
 
     function calculateBurnFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_burnFee).div(10 ** 2);
+        return _amount.mul(_burnFee).div(1000);
     }
 
     function calculateLiquidityFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_liquidityFee).div(10 ** 2);
+        return _amount.mul(_liquidityFee).div(1000);
+    }
+
+    function calculateHolderFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_lotteryHolderFee).div(1000);
     }
 
     function removeAllFee() private {
@@ -1170,6 +1194,7 @@ contract Token is Context, IERC20, Ownable {
         _previousMarketingFundFee = _marketingFundFee;
         _previousLotteryPotFee = _lotteryPotFee;
         _previousBurnFee = _burnFee;
+        _previousLotteryHolderFee = _lotteryHolderFee;
 
         _distributionFee = 0;
         _charityFee = 0;
@@ -1178,6 +1203,7 @@ contract Token is Context, IERC20, Ownable {
         _lotteryPotFee = 0;
         _burnFee = 0;
         _liquidityFee = 0;
+        _lotteryHolderFee = 0;
     }
 
     function restoreAllFee() private {
@@ -1188,6 +1214,7 @@ contract Token is Context, IERC20, Ownable {
         _lotteryPotFee = _previousLotteryPotFee;
         _burnFee = _previousBurnFee;
         _liquidityFee = _previousLiquidityFee;
+        _lotteryHolderFee = _previousLotteryHolderFee;
     }
 
     function isExcludedFromFee(address account) public view returns (bool) {
@@ -1202,19 +1229,20 @@ contract Token is Context, IERC20, Ownable {
         emit Approval(owner, spender, amount);
     }
 
-    uint256 public lastSupply;
-    uint256 public lastInterval;
-    uint256 public lastCreationTime;
-    uint256 public allowedAmount;
-    uint256 public lastUserBalance;
 
-    function _antiAbuse(address from, address to, uint256 amount) private {
-        if (from != owner() && to != owner())
-            require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
+    function _antiAbuse(address from, address to, uint256 amount) private view {
+
+        if (from == owner() || to == owner())
+        //  if owner we just return or we can't add liquidity
+            return;
+
+        require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
+
+        uint256 lastCreationTime;
+        uint256 allowedAmount;
 
         (, uint256 tSupply) = _getCurrentSupply();
-        lastSupply = tSupply;
-        lastUserBalance = balanceOf(to) + (amount * (100 - getTotalFees()) / 100);
+        uint256 lastUserBalance = balanceOf(to) + (amount * (100 - getTotalFees()) / 100);
 
         // bot \ whales prevention
         if (now <= (_creationTime.add(1 days))) {
@@ -1396,12 +1424,16 @@ contract Token is Context, IERC20, Ownable {
     function getTotalFees() internal view returns (uint256) {
         return _charityFee + _liquidityFee + _burnFee + _lotteryPotFee + _marketingFundFee + _devFundFee;
     }
-    function getLotSize() public view returns (uint256) {
+
+    function getPrizeForEach1k() public view returns (uint256) {
         return balanceOf(lotteryPotWalletAddress);
+    }
+    function getPrizeForHolders() public view returns (uint256) {
+        return balanceOf(holderAddress);
     }
 
     // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue;
+    uint256 public lotteryMinTicketValue = 1_000_000_000;
     address[] public lotList; // list of tickets for 1000 tx prize
     uint256 public endtime; // when lottery period end and prize get distributed
     uint256 public winNum; // index of last winner
@@ -1409,45 +1441,62 @@ contract Token is Context, IERC20, Ownable {
     uint256 public lotwinnerTimestamp; // last prize
     mapping(address => uint256) public userTicketsTs;
     uint256 public lotNonce;
-    uint256 public lotNonceLmt = 5; // TODO: CHANGE THIS TO 1000
-    uint256 public lotThousandNonceLmt = 5; // TODO: CHANGE THIS TO 1000
+    uint256 public lotNonceLmt = 1000; // TODO: CHANGE THIS TO 1000
 
-    uint256 public lotBalanceLmt = 1 ether; // TODO: CHANGE THIS TO 1_000_000_000
+
+    // bin balance user should maintain to be elegible for holder lottery.
+    uint256 public lotBalanceLmt = 1_000_000_000; // TODO: CHANGE THIS TO 1_000_000_000
+
+    // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
 
+    // size of random pool on each transfer, user that get 1 win the prize
+    uint256 public lotThousandNonceLmt = 1000; // TODO: CHANGE THIS TO 1000
 
+    // view to get illegible holders lottery
+    function getTicketsByBalance() public view returns(address[] memory){
+        return ticketsByBalance.getAllAddresses();
+    }
+
+    // process both lottery
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
         lotNonce = lotNonce.add(1);
         if (value >= lotteryMinTicketValue && to == donationAddress) {
             // unser transferring above min, add to lottery
             uint256 uts = userTicketsTs[user];
             if (uts == 0 || uts.add(3600) <= block.timestamp) {
+                // console.log("adding ticket=%d to=%s", lotList.length, user);
                 lotList.push(user);
                 userTicketsTs[user] = block.timestamp;
             }
         }
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
-        // lotteryTriggerEveryNtx();
+        lotteryTriggerEveryNtx();
         lotteryTriggerOneOfThousandTx();
     }
 
-    function addUserToBalanceLottery(address user) internal{
-        if( ! _isExcludedFromFee[user] && ! _isExcluded[user] ){
+    // add and remove users according to their balance from holder lottery
+    function addUserToBalanceLottery(address user) internal {
+        if (!_isExcludedFromFee[user] && !_isExcluded[user]) {
             uint256 balance = balanceOf(user);
             bool exists = ticketsByBalance.exists(user);
-            if( balance >= lotBalanceLmt && !exists )
+            if (balance >= lotBalanceLmt && !exists){
+                // console.log("-ADDING %s", user);
                 ticketsByBalance.pushAddress(user, false);
-            else if( balance < lotBalanceLmt && exists )
+            }else if (balance < lotBalanceLmt && exists){
+                // console.log("-REMOVING %s", user);
                 ticketsByBalance.removeAddress(user);
+            }
         }
     }
 
     // 0.5% for holders of certain amount of tokens for random chance every 1000 tx
+    // lottery that get triggered on N number of TX
     function lotteryTriggerEveryNtx() internal {
-        uint256 lotSize = getLotSize();
-        if (lotNonce > lotNonceLmt && lotList.length > 0 && lotSize > 0) {
-            uint256 prize = lotSize.div(2);
+        uint256 prize = getPrizeForEach1k();
+        if (lotNonce > lotNonceLmt && lotList.length > 0 && prize > 0) {
+            // console.log("lotNonceLmt reached lotSize=%s", lotSize);
             // we haver users in the list and end time passed, choose winner
             uint256 _mod = lotList.length;
             uint256 _randomNumber;
@@ -1455,30 +1504,41 @@ contract Token is Context, IERC20, Ownable {
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
             winNum = _randomNumber;
+            if (winNum == 0) {
+                // console.log("winNum=0");
+                return;
+                // dead address, wait next
+            }
             lotWinner = lotList[winNum];
+            // console.log("winner=%s winNum=%s", lotWinner, winNum);
             // transfer from lottery random wallet:
             _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
 
             // zero out lottery to be started again
             lotwinnerTimestamp = block.timestamp;
             delete lotList;
+            lotList.push(burnAddress);
             lotNonce = 0;
         }
     }
 
     // 0.5% for people who donate over a certain amount for random chance 1/1000 when making donation
+    // lottery that get triggered when user get 1 from a pool of 1/1000
     function lotteryTriggerOneOfThousandTx() internal {
-        uint256 lotSize = getLotSize().div(2);
-        if (ticketsByBalance.size() > 0 && lotSize > 0) {
-            uint256 prize = lotSize.div(2);
+        uint256 prize = getPrizeForHolders();
+
+        if (ticketsByBalance.size() > 0 && prize > 0) {
             // we haver users in the list and end time passed, choose winner
-            uint256 _mod = lotThousandNonceLmt; // need to be local var
+            uint256 _mod = lotThousandNonceLmt;
+            // need to be local var
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-            if( _randomNumber == 0 ){
+            // console.log("lotteryTriggerOneOfThousandTx(%s,%s,%s)", ticketsByBalance.size(), prize,_randomNumber );
+            if (_randomNumber == 1) {
                 lotWinner = ticketsByBalance.getAddressAtIndex(winNum);
+                // console.log("lotWinner=%s", lotWinner);
                 // transfer from lottery random wallet:
                 _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
                 // zero out lottery to be started again
@@ -1490,16 +1550,23 @@ contract Token is Context, IERC20, Ownable {
 
     // TODO: UNCOMMENT THIS
 
-    function setNonceLmt(uint256 val) public onlyOwner{
-        require(val>10,"err1");
+    function setLotteryMinTicketValue(uint256 val) public onlyOwner {
+        require(val > 10, "err1");
+        lotteryMinTicketValue = val;
+    }
+
+    function setNonceLmt(uint256 val) public onlyOwner {
+        require(val > 10, "err1");
         lotNonceLmt = val;
     }
-    function setLotThousandNonceLmt(uint256 val) public onlyOwner{
-        require(val>10,"err2");
+
+    function setLotThousandNonceLmt(uint256 val) public onlyOwner {
+        require(val > 10, "err2");
         lotThousandNonceLmt = val;
     }
-    function setLotBalanceLmt(uint256 val) public onlyOwner{
-        require(val>10,"err1");
+
+    function setLotBalanceLmt(uint256 val) public onlyOwner {
+        require(val > 10, "err1");
         lotBalanceLmt = val;
     }
 
