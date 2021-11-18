@@ -60,6 +60,20 @@ describe("Token contract", () => {
 
     });
     describe("Lottery", () => {
+        it("", async () => {
+            await token.transfer(user, MINTED);
+            console.log('userBalance', fromWei(await token.balanceOf(user)) );
+            // await token.connect(USER).transfer(user1, CEM);
+            // await token.connect(USER).transfer(user2, CEM);
+            // await token.connect(USER).transfer(user3, CEM);
+            // await token.connect(USER).transfer(user1, CEM);
+            // await token.connect(USER).transfer(user2, CEM);
+            // await token.connect(USER).transfer(user3, CEM);
+            // await token.connect(USER).transfer(user1, CEM);
+            // await token.connect(USER).transfer(user2, CEM);
+            // await token.connect(USER).transfer(user3, CEM);
+            // await token.connect(USER).transfer(user1, CEM);
+        });
         it("lottery", async () => {
             /*
             const donation: string = '0x000000000000000000000000000000000000000d';
@@ -82,24 +96,24 @@ describe("Token contract", () => {
             }
 
             await token.transfer(user, MINTED);
-            console.log(  (await token.getTicketsByBalance()) );
+            //console.log(  (await token.getTicketsByBalance()) );
             await token.transfer(user1, MINTED);
-            console.log(  (await token.getTicketsByBalance()) );
+            //console.log(  (await token.getTicketsByBalance()) );
             await token.transfer(user2, MINTED);
-            console.log(  (await token.getTicketsByBalance()) );
+            //console.log(  (await token.getTicketsByBalance()) );
             await token.transfer(user3, MINTED);
-            console.log(  (await token.getTicketsByBalance()) );
+            //console.log(  (await token.getTicketsByBalance()) );
 
 
             await token.connect(USER).transfer(donation, CEM);
-            console.log(  (await token.getTicketsByBalance()) );
+            // console.log(  (await token.getTicketsByBalance()) );
 
             const b = await token.balanceOf(user);
             await token.connect(USER).transfer(user1, b);
-            console.log(  (await token.getTicketsByBalance()) );
-*/
+            // console.log(  (await token.getTicketsByBalance()) );
+
             // dump('USER donation', user);
-/*
+
             await token.connect(USER1).transfer(donation, CEM);
             dump('USER1 donation', user1);
 
@@ -109,23 +123,23 @@ describe("Token contract", () => {
             await token.connect(USER3).transfer(donation, CEM);
             dump('USER3 donation', user3);
 
-
+            console.log('userBalance', fromWei(await token.balanceOf(user1)) );
             await token.connect(USER).transfer(user1, CEM);
             dump('tr USER', user);
 
-            await token.connect(USER1).transfer(user1, CEM);
-            dump('tr USER1', user1);
+            // await token.connect(USER1).transfer(user1, CEM);
+            // dump('tr USER1', user1);
 
-            await token.connect(USER2).transfer(user1, CEM);
-            dump('tr USER2', user2);
+            // await token.connect(USER2).transfer(user1, CEM);
+            // dump('tr USER2', user2);
 
-            await token.connect(USER3).transfer(user1, CEM);
-            dump('tr USER3', user3);
-*/
+            // await token.connect(USER3).transfer(user1, CEM);
+            // dump('tr USER3', user3);
+            */
         });
 
 
-
+/*
         it("balances", async () => {
 
             await token.transfer(user, CEM);
@@ -159,5 +173,7 @@ describe("Token contract", () => {
             // console.log('balanceOf_lotteryPotWalletAddress='+fromWei(balanceOf_lotteryPotWalletAddress));
 
         });
+
+ */
     });
 });

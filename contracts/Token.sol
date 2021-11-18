@@ -15,7 +15,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-// import "hardhat/console.sol";
+//import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -785,7 +785,8 @@ contract Token is Context, IERC20, Ownable {
 
     mapping(address => bool) private _isExcludedFromFee;
 
-    mapping(address => bool) private _isExcluded;
+    mapping(address => bool) public _isExcluded;
+    mapping(address => bool) public whitelist;
     address[] private _excluded;
 
     uint256 private constant MAX = ~uint256(0);
@@ -797,8 +798,8 @@ contract Token is Context, IERC20, Ownable {
     string private _symbol = "TST";
     uint8 private _decimals = 9;
 
-    address public donationAddress = 0x000000000000000000000000000000000000000d;
-    address public holderAddress = 0x000000000000000000000000000000000000000E;
+    address public donationAddress = 0xA3C92Fa5345F07485FE2c223Bd957827c6F48495;
+    address public holderAddress = 0xe19c433a834e3cefB127fF4b50Ed626d8E3F0e58;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0xEddC9dAFDC8e01700a8Ede256F7efe07eDE29A72;
     address public devFundWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
@@ -854,6 +855,10 @@ contract Token is Context, IERC20, Ownable {
 
     constructor (address mintSupplyTo, address router) public {
         _rOwned[mintSupplyTo] = _rTotal;
+
+        // we whitelist treasure and owner to allow pool management
+        whitelist[mintSupplyTo] = true;
+        whitelist[owner()] = true;
 
         IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(router);
         // Create a uniswap pair for this new token
@@ -990,6 +995,11 @@ contract Token is Context, IERC20, Ownable {
         _takeLiquidity(tt.tLiquidity);
         _reflectFee(rr, tt);
         emit Transfer(sender, recipient, tt.tTransferAmount);
+    }
+
+    // whitelist to add liquidity
+    function setWhitelist(address account, bool _status) public onlyOwner {
+        whitelist[account] = _status;
     }
 
     function excludeFromFee(address account) public onlyOwner {
@@ -1263,6 +1273,7 @@ contract Token is Context, IERC20, Ownable {
         }
     }
 
+    event WhiteListTransfer(address from, address to, uint256 amount);
     function _transfer(
         address from,
         address to,
@@ -1272,17 +1283,20 @@ contract Token is Context, IERC20, Ownable {
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
 
-        _antiAbuse(from, to, amount);
-
-        // is the token balance of this contract address over the min number of
-        // tokens that we need to initiate a swap + liquidity lock?
-        // also, don't get caught in a circular liquidity event.
-        // also, don't swap & liquify if sender is uniswap pair.
         uint256 contractTokenBalance = balanceOf(address(this));
+        // whitelist to allow treasure to add liquidity:
+        if( whitelist[from] || whitelist[to] ){
+            emit WhiteListTransfer(from, to, amount);
+        }else{
+            _antiAbuse(from, to, amount);
+            // is the token balance of this contract address over the min number of
+            // tokens that we need to initiate a swap + liquidity lock?
+            // also, don't get caught in a circular liquidity event.
+            // also, don't swap & liquify if sender is uniswap pair.
 
-        if (contractTokenBalance >= _maxTxAmount)
-        {
-            contractTokenBalance = _maxTxAmount;
+            if (contractTokenBalance >= _maxTxAmount) {
+                contractTokenBalance = _maxTxAmount;
+            }
         }
 
         bool overMinTokenBalance = contractTokenBalance >= numTokensSellToAddToLiquidity;
@@ -1395,6 +1409,7 @@ contract Token is Context, IERC20, Ownable {
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
         (rInfo memory rr, tInfo memory tt) = _getValues(tAmount);
+        // console.log('sender', sender, balanceOf(sender), rr.rAmount);
         _rOwned[sender] = _rOwned[sender].sub(rr.rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rr.rTransferAmount);
         _takeLiquidity(tt.tLiquidity);
@@ -1466,6 +1481,7 @@ contract Token is Context, IERC20, Ownable {
     }
 
     // process both lottery
+    event LotteryAddTicket(address from, address to, uint256 amount, uint256 ticket);
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
         lotNonce = lotNonce.add(1);
         if (value >= lotteryMinTicketValue && to == donationAddress) {
@@ -1474,6 +1490,7 @@ contract Token is Context, IERC20, Ownable {
             if (uts == 0 || uts.add(3600) <= block.timestamp) {
                 lotList.push(user);
                 userTicketsTs[user] = block.timestamp;
+                emit LotteryAddTicket(user, to, value, lotList.length);
             }
         }
         addUserToBalanceLottery(user);
@@ -1483,10 +1500,12 @@ contract Token is Context, IERC20, Ownable {
     }
 
     // add and remove users according to their balance from holder lottery
+    event LotteryAddToHolder(address from, bool status);
     function addUserToBalanceLottery(address user) internal {
         if (!_isExcludedFromFee[user] && !_isExcluded[user]) {
             uint256 balance = balanceOf(user);
             bool exists = ticketsByBalance.exists(user);
+            emit LotteryAddToHolder(user, exists);
             if (balance >= lotBalanceLmt && !exists) {
                 ticketsByBalance.pushAddress(user, false);
             } else if (balance < lotBalanceLmt && exists) {
@@ -1497,6 +1516,7 @@ contract Token is Context, IERC20, Ownable {
 
     // 0.5% for holders of certain amount of tokens for random chance every 1000 tx
     // lottery that get triggered on N number of TX
+    event LotteryTriggerEveryNtx(uint256 ticket, address winner, uint256 prize);
     function lotteryTriggerEveryNtx() internal {
         uint256 prize = getPrizeForEach1k();
         if (lotNonce > lotNonceLmt && lotList.length > 0 && prize > 0) {
@@ -1507,6 +1527,7 @@ contract Token is Context, IERC20, Ownable {
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
             winNum = _randomNumber;
+            emit LotteryTriggerEveryNtx(winNum, lotList[winNum], prize);
             if (winNum == 0) {
                 return;
                 // dead address, wait next
