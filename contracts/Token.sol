@@ -15,7 +15,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-//import "hardhat/console.sol";
+import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -1469,7 +1469,7 @@ contract Token is Context, IERC20, Ownable {
 
 
     // bin balance user should maintain to be elegible for holder lottery.
-    uint256 public lotBalanceLmt = 1_000_000_000; // TODO: CHANGE THIS TO 1_000_000_000
+    uint256 public lotBalanceLmt = 100_000_000_000; // 100
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
@@ -1550,7 +1550,7 @@ contract Token is Context, IERC20, Ownable {
     // lottery that get triggered when user get 1 from a pool of 1/1000
     event LotteryTriggerOneOfThousandTx(uint256 tickets, address winner, uint256 prize);
     function lotteryTriggerOneOfThousandTx() internal {
-        uint256 prize = getPrizeForHolders();
+        uint256 prize = balanceOf(lotteryPotWalletAddress);
 
         if (ticketsByBalance.size() > 0 && prize > 0) {
             // we haver users in the list and end time passed, choose winner

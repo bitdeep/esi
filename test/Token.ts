@@ -77,90 +77,26 @@ describe("Token contract", () => {
             await token.connect(USER).transfer(user3, CEM);
 
             // dev fund should be 10 (1%*100)
-            expect(fromWei(await token.balanceOf( await token.devFundWalletAddress() ))).to.be.equal('10.0');
+            expect(fromWei(await token.balanceOf(await token.devFundWalletAddress()))).to.be.equal('10.0');
 
             // 4 transfer of 100 each, user must receive 91 each total of 364 (91*4=364)
-            expect(fromWei(await token.balanceOf( user1 ))).to.be.equal('364.0');
+            expect(fromWei(await token.balanceOf(user1))).to.be.equal('364.0');
 
 
         });
-        it("lottery", async () => {
-            /*
-            const donation: string = '0x000000000000000000000000000000000000000d';
-
-            async function dump(title: string, usr:string) {
-                const tickets: any = await token.loterryUserTickets(usr);
-                const uts: any = await token.userTicketsTs(usr);
-                const t: any = await token.lotteryTotalTicket();
-                const ts: any = await token.lotwinnerTimestamp();
-                const ticket: any = await token.winNum();
-                const getPrizeForEach1k: any = await token.getPrizeForEach1k();
-                const getPrizeForHolders: any = await token.getPrizeForHolders();
-                const lotnonce: any = await token.lotNonce();
-                const lotwinner: any = await token.lotWinner();
-                const balanceOfWiner: any = await token.balanceOf(lotwinner);
-                const str: string = '\t' + title + ' balWin=' + fromWei(balanceOfWiner) + ' nonce=' + lotnonce +
-                    ' prize1k=' + fromWei(getPrizeForEach1k) + ' prizeMontlh=' + fromWei(getPrizeForHolders) + ' ticket=' + ticket +
-                    ' ts=' + ts + ' uts=' + uts + ' t=' + t + ' tickets=' + tickets.join(',');
-                console.log(_yellow(str));
-            }
-
-            await token.transfer(user, MINTED);
-            //console.log(  (await token.getTicketsByBalance()) );
-            await token.transfer(user1, MINTED);
-            //console.log(  (await token.getTicketsByBalance()) );
-            await token.transfer(user2, MINTED);
-            //console.log(  (await token.getTicketsByBalance()) );
-            await token.transfer(user3, MINTED);
-            //console.log(  (await token.getTicketsByBalance()) );
-
-
-            await token.connect(USER).transfer(donation, CEM);
-            // console.log(  (await token.getTicketsByBalance()) );
-
-            const b = await token.balanceOf(user);
-            await token.connect(USER).transfer(user1, b);
-            // console.log(  (await token.getTicketsByBalance()) );
-
-            // dump('USER donation', user);
-
-            await token.connect(USER1).transfer(donation, CEM);
-            dump('USER1 donation', user1);
-
-            await token.connect(USER2).transfer(donation, CEM);
-            dump('USER2 donation', user2);
-
-            await token.connect(USER3).transfer(donation, CEM);
-            dump('USER3 donation', user3);
-
-            console.log('userBalance', fromWei(await token.balanceOf(user1)) );
-            await token.connect(USER).transfer(user1, CEM);
-            dump('tr USER', user);
-
-            // await token.connect(USER1).transfer(user1, CEM);
-            // dump('tr USER1', user1);
-
-            // await token.connect(USER2).transfer(user1, CEM);
-            // dump('tr USER2', user2);
-
-            // await token.connect(USER3).transfer(user1, CEM);
-            // dump('tr USER3', user3);
-            */
-        });
-
 
         it("Do transfer and check balances", async () => {
 
             await token.transfer(user, CEM);
             await token.connect(USER).transfer(user1, CEM);
 
-            const donationAddress:string = await token.donationAddress();
-            const holderAddress:string = await token.holderAddress();
-            const burnAddress:string = await token.burnAddress();
-            const charityWalletAddress:string = await token.charityWalletAddress();
-            const devFundWalletAddress:string = await token.devFundWalletAddress();
-            const marketingFundWalletAddress:string = await token.marketingFundWalletAddress();
-            const lotteryPotWalletAddress:string = await token.lotteryPotWalletAddress();
+            const donationAddress: string = await token.donationAddress();
+            const holderAddress: string = await token.holderAddress();
+            const burnAddress: string = await token.burnAddress();
+            const charityWalletAddress: string = await token.charityWalletAddress();
+            const devFundWalletAddress: string = await token.devFundWalletAddress();
+            const marketingFundWalletAddress: string = await token.marketingFundWalletAddress();
+            const lotteryPotWalletAddress: string = await token.lotteryPotWalletAddress();
 
             const balanceOf_dev = await token.balanceOf(dev);
             const balanceOf_donationAddress = await token.balanceOf(donationAddress);
@@ -196,7 +132,103 @@ describe("Token contract", () => {
             expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
 
         });
+    });
 
+    describe("Loterry Tests", () => {
+        it("transfer above limit ticket test", async () => {
+
+            // the donation address, if we transfer to this address, we get a ticket
+            const donationAddress = await token.donationAddress();
+
+            // mininum transfer amount to get a transfer ticket: 1 (1_000_000_000) token
+            const lotteryMinTicketValue = await token.lotteryMinTicketValue();
+            expect(fromWei(lotteryMinTicketValue)).to.be.equal('1.0');
+
+            // should not get a ticket, bellow limit.
+            await token.transfer(user, toWei('0.1'));
+            let lotteryTotalTicket = (await token.lotteryTotalTicket()).toString();
+            expect(lotteryTotalTicket).to.be.equal('1'); // 0 = dead address
+
+            // should get a ticket, above min limit and to donation
+            await token.transfer(donationAddress, toWei('1.1'));
+
+            lotteryTotalTicket = (await token.lotteryTotalTicket()).toString();
+            // we should have 1 valid user ticket
+            expect(lotteryTotalTicket).to.be.equal('2');
+
+            // ticket at 0 index should be ticket 1
+            let loterryUserTickets = (await token.loterryUserTickets(dev));
+            expect(loterryUserTickets[0].toString()).to.be.equal('1');
+        });
+
+        it("transfer to donation ticket test", async () => {
+
+            // mininum balance to be ellegible to to holder lottery: 100 (100_000_000_000) token
+            const lotBalanceLmt = await token.lotBalanceLmt();
+            expect(fromWei(lotBalanceLmt)).to.be.equal('100.0');
+
+
+            /*
+            await token.transfer(user1, MINTED);
+            console.log(  (await token.getTicketsByBalance()) );
+            await token.transfer(user2, MINTED);
+            console.log(  (await token.getTicketsByBalance()) );
+            await token.transfer(user3, MINTED);
+            console.log(  (await token.getTicketsByBalance()) );
+            */
+
+            /*
+            const donation: string = '0x000000000000000000000000000000000000000d';
+
+            async function dump(title: string, usr:string) {
+                const tickets: any = await token.loterryUserTickets(usr);
+                const uts: any = await token.userTicketsTs(usr);
+                const t: any = await token.lotteryTotalTicket();
+                const ts: any = await token.lotwinnerTimestamp();
+                const ticket: any = await token.winNum();
+                const getPrizeForEach1k: any = await token.getPrizeForEach1k();
+                const getPrizeForHolders: any = await token.getPrizeForHolders();
+                const lotnonce: any = await token.lotNonce();
+                const lotwinner: any = await token.lotWinner();
+                const balanceOfWiner: any = await token.balanceOf(lotwinner);
+                const str: string = '\t' + title + ' balWin=' + fromWei(balanceOfWiner) + ' nonce=' + lotnonce +
+                    ' prize1k=' + fromWei(getPrizeForEach1k) + ' prizeMontlh=' + fromWei(getPrizeForHolders) + ' ticket=' + ticket +
+                    ' ts=' + ts + ' uts=' + uts + ' t=' + t + ' tickets=' + tickets.join(',');
+                console.log(_yellow(str));
+            }
+
+            await token.connect(USER).transfer(donation, CEM);
+            // console.log(  (await token.getTicketsByBalance()) );
+
+            const b = await token.balanceOf(user);
+            await token.connect(USER).transfer(user1, b);
+            // console.log(  (await token.getTicketsByBalance()) );
+
+            // dump('USER donation', user);
+
+            await token.connect(USER1).transfer(donation, CEM);
+            dump('USER1 donation', user1);
+
+            await token.connect(USER2).transfer(donation, CEM);
+            dump('USER2 donation', user2);
+
+            await token.connect(USER3).transfer(donation, CEM);
+            dump('USER3 donation', user3);
+
+            console.log('userBalance', fromWei(await token.balanceOf(user1)) );
+            await token.connect(USER).transfer(user1, CEM);
+            dump('tr USER', user);
+
+            // await token.connect(USER1).transfer(user1, CEM);
+            // dump('tr USER1', user1);
+
+            // await token.connect(USER2).transfer(user1, CEM);
+            // dump('tr USER2', user2);
+
+            // await token.connect(USER3).transfer(user1, CEM);
+            // dump('tr USER3', user3);
+            */
+        });
 
     });
 });
