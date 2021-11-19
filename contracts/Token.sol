@@ -794,17 +794,19 @@ contract Token is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TEST";
-    string private _symbol = "TST";
+    string private _name = "TESTv3";
+    string private _symbol = "TSTv3";
     uint8 private _decimals = 9;
 
     address public donationAddress = 0xA3C92Fa5345F07485FE2c223Bd957827c6F48495;
     address public holderAddress = 0xe19c433a834e3cefB127fF4b50Ed626d8E3F0e58;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0xEddC9dAFDC8e01700a8Ede256F7efe07eDE29A72;
-    address public devFundWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
-    address public marketingFundWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
-    address public lotteryPotWalletAddress = 0x1c63E1718538d5D3abEBDD35f968B22B3BD2cc4F;
+
+    // temporary address until we get correct final addresses:
+    address public devFundWalletAddress = 0x000000000000000000000000000000000000000A;
+    address public marketingFundWalletAddress = 0x000000000000000000000000000000000000000b;
+    address public lotteryPotWalletAddress = 0x000000000000000000000000000000000000000C;
 
     uint256 public _distributionFee = 10; //1%
     uint256 private _previousDistributionFee = _distributionFee;
@@ -1064,12 +1066,12 @@ contract Token is Context, IERC20, Ownable {
         _rOwned[lotteryPotWalletAddress] = _rOwned[lotteryPotWalletAddress].add(rr.rLotteryPotFee);
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
 
-        emit Transfer(msg.sender, holderAddress, rr.rHolderFee);
-        emit Transfer(msg.sender, charityWalletAddress, rr.rCharityFee);
-        emit Transfer(msg.sender, devFundWalletAddress, rr.rDevFundFee);
-        emit Transfer(msg.sender, marketingFundWalletAddress, rr.rMarketingFundFee);
-        emit Transfer(msg.sender, lotteryPotWalletAddress, rr.rLotteryPotFee);
-        emit Transfer(msg.sender, burnAddress, rr.rBurn);
+        //        emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
+        //        emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
+        //        emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
+        //        emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
+        //        emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
+        //        emit Transfer(msg.sender, burnAddress, tt.tBurn);
 
     }
 
@@ -1463,7 +1465,7 @@ contract Token is Context, IERC20, Ownable {
     uint256 public lotwinnerTimestamp; // last prize
     mapping(address => uint256) public userTicketsTs;
     uint256 public lotNonce;
-    uint256 public lotNonceLmt = 1000; // TODO: CHANGE THIS TO 1000
+    uint256 public lotNonceLmt = 3; // TODO: CHANGE THIS TO 1000
 
 
     // bin balance user should maintain to be elegible for holder lottery.
@@ -1473,7 +1475,7 @@ contract Token is Context, IERC20, Ownable {
     AddrArrayLib.Addresses private ticketsByBalance;
 
     // size of random pool on each transfer, user that get 1 win the prize
-    uint256 public lotThousandNonceLmt = 1000; // TODO: CHANGE THIS TO 1000
+    uint256 public lotThousandNonceLmt = 3; // TODO: CHANGE THIS TO 1000
 
     // view to get illegible holders lottery
     function getTicketsByBalance() public view returns (address[] memory){
@@ -1546,6 +1548,7 @@ contract Token is Context, IERC20, Ownable {
 
     // 0.5% for people who donate over a certain amount for random chance 1/1000 when making donation
     // lottery that get triggered when user get 1 from a pool of 1/1000
+    event LotteryTriggerOneOfThousandTx(uint256 tickets, address winner, uint256 prize);
     function lotteryTriggerOneOfThousandTx() internal {
         uint256 prize = getPrizeForHolders();
 
@@ -1563,6 +1566,7 @@ contract Token is Context, IERC20, Ownable {
                 _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
                 // zero out lottery to be started again
                 lotwinnerTimestamp = block.timestamp;
+                LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotWinner, prize);
                 ticketsByBalance.removeAll();
             }
         }
@@ -1571,22 +1575,22 @@ contract Token is Context, IERC20, Ownable {
     // TODO: UNCOMMENT THIS
 
     function setLotteryMinTicketValue(uint256 val) public onlyOwner {
-        require(val > 10, "err1");
+        require(val > 1, "err1");
         lotteryMinTicketValue = val;
     }
 
     function setNonceLmt(uint256 val) public onlyOwner {
-        require(val > 10, "err1");
+        require(val > 1, "err1");
         lotNonceLmt = val;
     }
 
     function setLotThousandNonceLmt(uint256 val) public onlyOwner {
-        require(val > 10, "err2");
+        require(val > 1, "err2");
         lotThousandNonceLmt = val;
     }
 
     function setLotBalanceLmt(uint256 val) public onlyOwner {
-        require(val > 10, "err1");
+        require(val > 1, "err1");
         lotBalanceLmt = val;
     }
 

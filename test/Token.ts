@@ -59,20 +59,30 @@ describe("Token contract", () => {
 
 
     });
-    describe("Lottery", () => {
-        it("", async () => {
+    describe("Transfers", () => {
+        it("Do 10 transfers of 100 each", async () => {
             await token.transfer(user, MINTED);
-            console.log('userBalance', fromWei(await token.balanceOf(user)) );
-            // await token.connect(USER).transfer(user1, CEM);
-            // await token.connect(USER).transfer(user2, CEM);
-            // await token.connect(USER).transfer(user3, CEM);
-            // await token.connect(USER).transfer(user1, CEM);
-            // await token.connect(USER).transfer(user2, CEM);
-            // await token.connect(USER).transfer(user3, CEM);
-            // await token.connect(USER).transfer(user1, CEM);
-            // await token.connect(USER).transfer(user2, CEM);
-            // await token.connect(USER).transfer(user3, CEM);
-            // await token.connect(USER).transfer(user1, CEM);
+            // console.log('userBalance', fromWei(await token.balanceOf(user)) );
+            await token.connect(USER).transfer(user1, CEM);
+            await token.connect(USER).transfer(user1, CEM);
+            await token.connect(USER).transfer(user1, CEM);
+            await token.connect(USER).transfer(user1, CEM);
+
+            await token.connect(USER).transfer(user2, CEM);
+            await token.connect(USER).transfer(user2, CEM);
+            await token.connect(USER).transfer(user2, CEM);
+
+            await token.connect(USER).transfer(user3, CEM);
+            await token.connect(USER).transfer(user3, CEM);
+            await token.connect(USER).transfer(user3, CEM);
+
+            // dev fund should be 10 (1%*100)
+            expect(fromWei(await token.balanceOf( await token.devFundWalletAddress() ))).to.be.equal('10.0');
+
+            // 4 transfer of 100 each, user must receive 91 each total of 364 (91*4=364)
+            expect(fromWei(await token.balanceOf( user1 ))).to.be.equal('364.0');
+
+
         });
         it("lottery", async () => {
             /*
@@ -139,8 +149,7 @@ describe("Token contract", () => {
         });
 
 
-/*
-        it("balances", async () => {
+        it("Do transfer and check balances", async () => {
 
             await token.transfer(user, CEM);
             await token.connect(USER).transfer(user1, CEM);
@@ -162,18 +171,32 @@ describe("Token contract", () => {
             const balanceOf_marketingFundWalletAddress = await token.balanceOf(marketingFundWalletAddress);
             const balanceOf_lotteryPotWalletAddress = await token.balanceOf(lotteryPotWalletAddress);
 
-            // console.log('CEM='+fromWei(CEM));
-            // console.log('dev='+fromWei(balanceOf_dev));
-            // console.log('balanceOf_donationAddress='+fromWei(balanceOf_donationAddress) );
-            // console.log('balanceOf_holderAddress='+fromWei(balanceOf_holderAddress));
-            // console.log('balanceOf_burnAddress='+fromWei(balanceOf_burnAddress));
-            // console.log('balanceOf_charityWalletAddress='+fromWei(balanceOf_charityWalletAddress));
-            // console.log('balanceOf_devFundWalletAddress='+fromWei(balanceOf_devFundWalletAddress));
-            // console.log('balanceOf_marketingFundWalletAddress='+fromWei(balanceOf_marketingFundWalletAddress));
-            // console.log('balanceOf_lotteryPotWalletAddress='+fromWei(balanceOf_lotteryPotWalletAddress));
+            // should be 999999999999900.999999999 because we transferred only 100
+            expect(fromWei(balanceOf_dev)).to.be.equal('999999999999900.999999999');
+
+            // should be 0 because we are no transferring to donation
+            expect(fromWei(balanceOf_donationAddress)).to.be.equal('0.0');
+
+            // holder wallet should get 0.5% on each transfer
+            expect(fromWei(balanceOf_holderAddress)).to.be.equal('0.5');
+
+            // holder wallet should get 1% on each transfer
+            expect(fromWei(balanceOf_burnAddress)).to.be.equal('1.0');
+
+            // charity wallet should get 2% on each transfer
+            expect(fromWei(balanceOf_charityWalletAddress)).to.be.equal('2.0');
+
+            // dev wallet should get 1% on each transfer
+            expect(fromWei(balanceOf_devFundWalletAddress)).to.be.equal('1.0');
+
+            // market wallet should get 2% on each transfer
+            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('2.0');
+
+            // lottery wallet should get 0.5% on each transfer
+            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
 
         });
 
- */
+
     });
 });
