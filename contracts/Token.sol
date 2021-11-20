@@ -725,10 +725,6 @@ interface IUniswapV2Router01 {
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
 
-
-
-// pragma solidity >=0.6.2;
-
 interface IUniswapV2Router02 is IUniswapV2Router01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
@@ -850,8 +846,9 @@ contract Token is Context, IERC20, Ownable {
     uint256 public endtime; // when lottery period end and prize get distributed
     uint256 public winNum; // index of last winner
     address public lotWinner; // last random winner
+    uint256 public lotWinnerPrize; // amount to be paid on next interaction
     address public lotHolderWinner; // last holder winner
-    uint256 public lotwinnerTimestamp; // last prize
+    uint256 public lotHolderPrize; // amount to be paid on next interaction
     mapping(address => uint256) public userTicketsTs;
     uint256 public lotNonce;
     uint256 public lotNonceLmt = 3; // TODO: CHANGE THIS TO 1000
@@ -1500,6 +1497,7 @@ contract Token is Context, IERC20, Ownable {
                 emit LotteryAddTicket(user, to, value, lotList.length);
             }
         }
+        doPendingTransfers();
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
         lotteryTriggerEveryNtx();
@@ -1526,31 +1524,20 @@ contract Token is Context, IERC20, Ownable {
     event LotteryTriggerEveryNtx(uint256 ticket, address winner, uint256 prize);
     function lotteryTriggerEveryNtx() internal {
         uint256 prize = getPrizeForEach1k();
-
-        if (lotNonce > lotNonceLmt && lotList.length > 0 && prize > 0) {
-            // we haver users in the list and end time passed, choose winner
-            uint256 _mod = lotList.length;
-            uint256 _randomNumber;
-            bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
-            _randomNumber = uint256(_structHash);
-            assembly {_randomNumber := mod(_randomNumber, _mod)}
-            winNum = _randomNumber;
-            // console.log("lotNonce(%s) > lotNonceLmt(%s) winNum(%s)", lotNonce, lotNonceLmt, winNum);
-            if (winNum == 0) {
-                // why not 0? 0 is not valid, you will get it lots of time, ignore it.
-                return;
-                // dead address, wait next
-            }
-            emit LotteryTriggerEveryNtx(winNum, lotList[winNum], prize);
-            lotWinner = lotList[winNum];
-            // transfer from lottery random wallet:
-            _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
-
-            // zero out lottery to be started again
-            lotwinnerTimestamp = block.timestamp;
+        // we haver users in the list and end time passed, choose winner
+        uint256 _mod = lotList.length;
+        uint256 _randomNumber;
+        // COMPUTE RANDOM GENERATION OUTSIDE CONDITION TO FORCE EXTRA GAS ESTIMATION:
+        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+        _randomNumber = uint256(_structHash);
+        assembly {_randomNumber := mod(_randomNumber, _mod)}
+        winNum = _randomNumber;
+        lotWinner = lotList[winNum];
+        // why not 0? 0 is not valid, you will get it lots of time, ignore it.
+        if (lotNonce > lotNonceLmt && lotList.length > 1 && prize > 0 && winNum > 0) {
+            // do minimal computation to avoid gas problem:
+            lotWinnerPrize = prize;
             delete lotList;
-            lotList.push(burnAddress);
-            lotNonce = 0;
         }
     }
 
@@ -1558,35 +1545,53 @@ contract Token is Context, IERC20, Ownable {
     // lottery that get triggered when user get 1 from a pool of 1/1000
     event LotteryTriggerOneOfThousandTx(uint256 tickets, address winner, uint256 prize);
     function lotteryTriggerOneOfThousandTx() internal {
+
+        // ALL OUTSIDE THE IF TO FORCE ADDITIONAL GAS COMPUTATION:
         uint256 prize = balanceOf(lotteryPotWalletAddress);
+        // we haver users in the list and end time passed, choose winner
+        uint256 _mod = lotThousandNonceLmt;
+        // need to be local var
+        uint256 _randomNumber;
+        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+        _randomNumber = uint256(_structHash);
+        assembly {_randomNumber := mod(_randomNumber, _mod)}
+
         // the 3 indicates that we should have at least 3 successful users
         // in the list of balances to be able to enter loterry code.
-        if (ticketsByBalance.size() >= 3 && prize > 0) {
-            // we haver users in the list and end time passed, choose winner
-            uint256 _mod = lotThousandNonceLmt;
-            // need to be local var
-            uint256 _randomNumber;
-            bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
-            _randomNumber = uint256(_structHash);
-            assembly {_randomNumber := mod(_randomNumber, _mod)}
+        // note: ticketsByBalance.size() >= 3: prevent triggering winner again as we pay in next tx:
+        if (ticketsByBalance.size() >= 3 && prize > 0 ) {
+
+            // pre-select a possible winner outside random to force gas computation:
+            lotHolderWinner = ticketsByBalance.getAddressAtIndex(winNum);
+
             // console.log("-_randomNumber=%s mod=%s", _randomNumber, (lotThousandNonceLmt-1) );
             // loter 1/1000 only get triggered if the mod is 1000
             // avoid 0 or it get triggered constantly.
             if (_randomNumber == (lotThousandNonceLmt-1)) {
-                lotHolderWinner = ticketsByBalance.getAddressAtIndex(winNum);
-                // transfer from lottery random wallet:
-//                console.log("  -WINNER %s=%s", lotWinner, balanceOf(lotteryPotWalletAddress) );
-//                console.log("  -PRIZE %s", prize );
-                _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
+                // do minimal computation here to avoid gas problem:
+                lotHolderPrize = prize;
                 // zero out lottery to be started again
-                lotwinnerTimestamp = block.timestamp;
-                LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotWinner, prize);
                 ticketsByBalance.removeAll();
             }
         }
     }
 
-    // TODO: UNCOMMENT THIS
+    function doPendingTransfers() internal {
+        if( lotHolderPrize > 0 ){
+            // transfer from lottery random wallet:
+            _tokenTransfer(lotteryPotWalletAddress, lotHolderWinner, lotHolderPrize, false);
+            emit LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotHolderWinner, lotHolderPrize);
+            lotHolderPrize = 0;
+        }
+        if( lotWinnerPrize > 0 ){
+            // transfer from lottery random wallet:
+            _tokenTransfer(lotteryPotWalletAddress, lotWinner, lotWinnerPrize, false);
+            emit LotteryTriggerEveryNtx(winNum, lotWinner, lotWinnerPrize);
+            lotWinnerPrize = 0;
+            lotNonce = 0;
+            lotList.push(burnAddress);
+        }
+    }
 
     function setLotteryMinTicketValue(uint256 val) public onlyOwner {
         require(val > 1, "err1");
