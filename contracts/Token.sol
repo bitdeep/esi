@@ -841,6 +841,32 @@ contract Token is Context, IERC20, Ownable {
     uint256 public _maxTxAmount = 5_000_000 * 10 ** 6 * 10 ** 9;
     uint256 private numTokensSellToAddToLiquidity = 500_000 * 10 ** 6 * 10 ** 9;
 
+
+
+
+    // mint transfer value to get a ticket
+    uint256 public lotteryMinTicketValue = 1_000_000_000;
+    address[] public lotList; // list of tickets for 1000 tx prize
+    uint256 public endtime; // when lottery period end and prize get distributed
+    uint256 public winNum; // index of last winner
+    address public lotWinner; // last random winner
+    address public lotHolderWinner; // last holder winner
+    uint256 public lotwinnerTimestamp; // last prize
+    mapping(address => uint256) public userTicketsTs;
+    uint256 public lotNonce;
+    uint256 public lotNonceLmt = 3; // TODO: CHANGE THIS TO 1000
+
+
+    // bin balance user should maintain to be elegible for holder lottery.
+    uint256 public lotBalanceLmt = 100_000_000_000; // 100
+
+    // list of balance by users illegible for holder lottery
+    AddrArrayLib.Addresses private ticketsByBalance;
+
+    // size of random pool on each transfer, user that get 1 win the prize
+    uint256 public lotThousandNonceLmt = 3; // TODO: CHANGE THIS TO 1000
+
+
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
     event SwapAndLiquify(
@@ -1125,7 +1151,7 @@ contract Token is Context, IERC20, Ownable {
 
     function _getRValues(uint256 tAmount, uint256 tDistributionFee, uint256 tCharityFee, uint256 tDevFundFee,
         uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 rHolderFee, uint256 tLiquidity,
-        uint256 currentRate) private view returns (rInfo memory rr) {
+        uint256 currentRate) private pure returns (rInfo memory rr) {
         rr.rAmount = tAmount.mul(currentRate);
         rr.rDistributionFee = tDistributionFee.mul(currentRate);
         rr.rCharityFee = tCharityFee.mul(currentRate);
@@ -1456,27 +1482,6 @@ contract Token is Context, IERC20, Ownable {
         return balanceOf(holderAddress);
     }
 
-    // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue = 1_000_000_000;
-    address[] public lotList; // list of tickets for 1000 tx prize
-    uint256 public endtime; // when lottery period end and prize get distributed
-    uint256 public winNum; // index of last winner
-    address public lotWinner; // last winner address
-    uint256 public lotwinnerTimestamp; // last prize
-    mapping(address => uint256) public userTicketsTs;
-    uint256 public lotNonce;
-    uint256 public lotNonceLmt = 3; // TODO: CHANGE THIS TO 1000
-
-
-    // bin balance user should maintain to be elegible for holder lottery.
-    uint256 public lotBalanceLmt = 100_000_000_000; // 100
-
-    // list of balance by users illegible for holder lottery
-    AddrArrayLib.Addresses private ticketsByBalance;
-
-    // size of random pool on each transfer, user that get 1 win the prize
-    uint256 public lotThousandNonceLmt = 3; // TODO: CHANGE THIS TO 1000
-
     // view to get illegible holders lottery
     function getTicketsByBalance() public view returns (address[] memory){
         return ticketsByBalance.getAllAddresses();
@@ -1521,6 +1526,7 @@ contract Token is Context, IERC20, Ownable {
     event LotteryTriggerEveryNtx(uint256 ticket, address winner, uint256 prize);
     function lotteryTriggerEveryNtx() internal {
         uint256 prize = getPrizeForEach1k();
+
         if (lotNonce > lotNonceLmt && lotList.length > 0 && prize > 0) {
             // we haver users in the list and end time passed, choose winner
             uint256 _mod = lotList.length;
@@ -1529,11 +1535,13 @@ contract Token is Context, IERC20, Ownable {
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
             winNum = _randomNumber;
-            emit LotteryTriggerEveryNtx(winNum, lotList[winNum], prize);
+            // console.log("lotNonce(%s) > lotNonceLmt(%s) winNum(%s)", lotNonce, lotNonceLmt, winNum);
             if (winNum == 0) {
+                // why not 0? 0 is not valid, you will get it lots of time, ignore it.
                 return;
                 // dead address, wait next
             }
+            emit LotteryTriggerEveryNtx(winNum, lotList[winNum], prize);
             lotWinner = lotList[winNum];
             // transfer from lottery random wallet:
             _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
@@ -1551,8 +1559,9 @@ contract Token is Context, IERC20, Ownable {
     event LotteryTriggerOneOfThousandTx(uint256 tickets, address winner, uint256 prize);
     function lotteryTriggerOneOfThousandTx() internal {
         uint256 prize = balanceOf(lotteryPotWalletAddress);
-
-        if (ticketsByBalance.size() > 0 && prize > 0) {
+        // the 3 indicates that we should have at least 3 successful users
+        // in the list of balances to be able to enter loterry code.
+        if (ticketsByBalance.size() >= 3 && prize > 0) {
             // we haver users in the list and end time passed, choose winner
             uint256 _mod = lotThousandNonceLmt;
             // need to be local var
@@ -1560,9 +1569,14 @@ contract Token is Context, IERC20, Ownable {
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-            if (_randomNumber == 1) {
-                lotWinner = ticketsByBalance.getAddressAtIndex(winNum);
+            // console.log("-_randomNumber=%s mod=%s", _randomNumber, (lotThousandNonceLmt-1) );
+            // loter 1/1000 only get triggered if the mod is 1000
+            // avoid 0 or it get triggered constantly.
+            if (_randomNumber == (lotThousandNonceLmt-1)) {
+                lotHolderWinner = ticketsByBalance.getAddressAtIndex(winNum);
                 // transfer from lottery random wallet:
+//                console.log("  -WINNER %s=%s", lotWinner, balanceOf(lotteryPotWalletAddress) );
+//                console.log("  -PRIZE %s", prize );
                 _tokenTransfer(lotteryPotWalletAddress, lotWinner, prize, false);
                 // zero out lottery to be started again
                 lotwinnerTimestamp = block.timestamp;
