@@ -15,7 +15,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -71,8 +71,6 @@ library AddrArrayLib {
         return self._items;
     }
 }
-
-
 interface IERC20 {
 
     function totalSupply() external view returns (uint256);
@@ -141,23 +139,6 @@ interface IERC20 {
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-
-
-
-/**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
-
 library SafeMath {
     /**
      * @dev Returns the addition of two unsigned integers, reverting on
@@ -300,7 +281,6 @@ library SafeMath {
         return a % b;
     }
 }
-
 abstract contract Context {
     function _msgSender() internal view virtual returns (address payable) {
         return msg.sender;
@@ -312,11 +292,6 @@ abstract contract Context {
         return msg.data;
     }
 }
-
-
-/**
- * @dev Collection of functions related to the address type
- */
 library Address {
     /**
      * @dev Returns true if `account` is a contract.
@@ -451,19 +426,6 @@ library Address {
         }
     }
 }
-
-/**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
- */
 contract Ownable is Context {
     address private _owner;
 
@@ -516,9 +478,6 @@ contract Ownable is Context {
     }
 
 }
-
-// pragma solidity >=0.5.0;
-
 interface IUniswapV2Factory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
@@ -538,10 +497,6 @@ interface IUniswapV2Factory {
 
     function setFeeToSetter(address) external;
 }
-
-
-// pragma solidity >=0.5.0;
-
 interface IUniswapV2Pair {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
@@ -612,9 +567,6 @@ interface IUniswapV2Pair {
 
     function initialize(address, address) external;
 }
-
-// pragma solidity >=0.6.2;
-
 interface IUniswapV2Router01 {
     function factory() external pure returns (address);
 
@@ -724,7 +676,6 @@ interface IUniswapV2Router01 {
 
     function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
 }
-
 interface IUniswapV2Router02 is IUniswapV2Router01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
@@ -769,7 +720,6 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
     ) external;
 }
 
-
 contract Token is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
@@ -790,8 +740,8 @@ contract Token is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv3";
-    string private _symbol = "TSTv3";
+    string private _name = "TESTv6";
+    string private _symbol = "TSTv6";
     uint8 private _decimals = 9;
 
     address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -846,10 +796,11 @@ contract Token is Context, IERC20, Ownable {
     uint256 public endtime; // when lottery period end and prize get distributed
     uint256 public winNum; // index of last winner
     address public lotWinner; // last random winner
-    uint256 public lotWinnerPrize; // amount to be paid on next interaction
+    bool public lotWinnerPrize = false; // amount to be paid on next interaction
     address public lotHolderWinner; // last holder winner
-    uint256 public lotHolderPrize; // amount to be paid on next interaction
+    bool public lotHolderPrize = false; // amount to be paid on next interaction
     mapping(address => uint256) public userTicketsTs;
+    bool public disableTicketsTs; // disable on testing env only
     uint256 public lotNonce;
     uint256 public lotNonceLmt = 3; // TODO: CHANGE THIS TO 1000
 
@@ -1491,10 +1442,13 @@ contract Token is Context, IERC20, Ownable {
         if (value >= lotteryMinTicketValue && to == donationAddress) {
             // unser transferring above min, add to lottery
             uint256 uts = userTicketsTs[user];
-            if (uts == 0 || uts.add(3600) <= block.timestamp) {
+            if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
+                // console.log("donation: ", user, value, lotList.length);
                 lotList.push(user);
                 userTicketsTs[user] = block.timestamp;
                 emit LotteryAddTicket(user, to, value, lotList.length);
+            }else{
+                // console.log("BLOCKED ", user, value);
             }
         }
         doPendingTransfers();
@@ -1505,12 +1459,12 @@ contract Token is Context, IERC20, Ownable {
     }
 
     // add and remove users according to their balance from holder lottery
-    event LotteryAddToHolder(address from, bool status);
+    //event LotteryAddToHolder(address from, bool status);
     function addUserToBalanceLottery(address user) internal {
         if (!_isExcludedFromFee[user] && !_isExcluded[user]) {
             uint256 balance = balanceOf(user);
             bool exists = ticketsByBalance.exists(user);
-            emit LotteryAddToHolder(user, exists);
+            // emit LotteryAddToHolder(user, exists);
             if (balance >= lotBalanceLmt && !exists) {
                 ticketsByBalance.pushAddress(user, false);
             } else if (balance < lotBalanceLmt && exists) {
@@ -1528,7 +1482,7 @@ contract Token is Context, IERC20, Ownable {
         uint256 _mod = lotList.length;
         uint256 _randomNumber;
         // COMPUTE RANDOM GENERATION OUTSIDE CONDITION TO FORCE EXTRA GAS ESTIMATION:
-        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft(), prize));
         _randomNumber = uint256(_structHash);
         assembly {_randomNumber := mod(_randomNumber, _mod)}
         winNum = _randomNumber;
@@ -1536,7 +1490,7 @@ contract Token is Context, IERC20, Ownable {
         // why not 0? 0 is not valid, you will get it lots of time, ignore it.
         if (lotNonce > lotNonceLmt && lotList.length > 1 && prize > 0 && winNum > 0) {
             // do minimal computation to avoid gas problem:
-            lotWinnerPrize = prize;
+            lotWinnerPrize = true;
             delete lotList;
         }
     }
@@ -1545,49 +1499,49 @@ contract Token is Context, IERC20, Ownable {
     // lottery that get triggered when user get 1 from a pool of 1/1000
     event LotteryTriggerOneOfThousandTx(uint256 tickets, address winner, uint256 prize);
     function lotteryTriggerOneOfThousandTx() internal {
-
-        // ALL OUTSIDE THE IF TO FORCE ADDITIONAL GAS COMPUTATION:
         uint256 prize = balanceOf(lotteryPotWalletAddress);
-        // we haver users in the list and end time passed, choose winner
-        uint256 _mod = lotThousandNonceLmt;
-        // need to be local var
-        uint256 _randomNumber;
-        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
-        _randomNumber = uint256(_structHash);
-        assembly {_randomNumber := mod(_randomNumber, _mod)}
+        if( ticketsByBalance.size() > 1 && prize > 0 ){
+            // ALL OUTSIDE THE IF TO FORCE ADDITIONAL GAS COMPUTATION:
+            // we haver users in the list and end time passed, choose winner
+            uint256 _mod = lotThousandNonceLmt;
+            // need to be local var
+            uint256 _randomNumber;
+            bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
+            _randomNumber = uint256(_structHash);
+            assembly {_randomNumber := mod(_randomNumber, _mod)}
 
-        // the 3 indicates that we should have at least 3 successful users
-        // in the list of balances to be able to enter loterry code.
-        // note: ticketsByBalance.size() >= 3: prevent triggering winner again as we pay in next tx:
-        if (ticketsByBalance.size() >= 3 && prize > 0 ) {
+            if ( _randomNumber > 0 && _randomNumber < ticketsByBalance.size() ) {
 
-            // pre-select a possible winner outside random to force gas computation:
-            lotHolderWinner = ticketsByBalance.getAddressAtIndex(winNum);
+                // pre-select a possible winner outside random to force gas computation:
+                // console.log("**", ticketsByBalance.size(), _randomNumber );
+                lotHolderWinner = ticketsByBalance.getAddressAtIndex(_randomNumber);
 
-            // console.log("-_randomNumber=%s mod=%s", _randomNumber, (lotThousandNonceLmt-1) );
-            // loter 1/1000 only get triggered if the mod is 1000
-            // avoid 0 or it get triggered constantly.
-            if (_randomNumber == (lotThousandNonceLmt-1)) {
-                // do minimal computation here to avoid gas problem:
-                lotHolderPrize = prize;
-                // zero out lottery to be started again
-                ticketsByBalance.removeAll();
+                // console.log("-_randomNumber=%s mod=%s", _randomNumber, (lotThousandNonceLmt-1) );
+                // loter 1/1000 only get triggered if the mod is 1000
+                // avoid 0 or it get triggered constantly.
+                if (_randomNumber == (lotThousandNonceLmt-1)) {
+                    // console.log("NTX", ticketsByBalance.size(), _randomNumber, _mod);
+                    // do minimal computation here to avoid gas problem:
+                    lotHolderPrize = true;
+                }
             }
         }
     }
 
     function doPendingTransfers() internal {
-        if( lotHolderPrize > 0 ){
+        if( lotHolderPrize == true && getPrizeForHolders() > 0 ){
+            // console.log("- PAY HOLDER PRIZE", getPrizeForHolders());
             // transfer from lottery random wallet:
-            _tokenTransfer(lotteryPotWalletAddress, lotHolderWinner, lotHolderPrize, false);
-            emit LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotHolderWinner, lotHolderPrize);
-            lotHolderPrize = 0;
+            emit LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotHolderWinner, getPrizeForHolders());
+            _tokenTransfer(holderAddress, lotHolderWinner, getPrizeForHolders(), false);
+            lotHolderPrize = false;
         }
-        if( lotWinnerPrize > 0 ){
+        if( lotWinnerPrize == true && getPrizeForEach1k() > 0 ){
             // transfer from lottery random wallet:
-            _tokenTransfer(lotteryPotWalletAddress, lotWinner, lotWinnerPrize, false);
-            emit LotteryTriggerEveryNtx(winNum, lotWinner, lotWinnerPrize);
-            lotWinnerPrize = 0;
+            // console.log("- PAY EVERY Ntx PRIZE", getPrizeForEach1k());
+            emit LotteryTriggerEveryNtx(winNum, lotWinner, getPrizeForEach1k() );
+            _tokenTransfer(lotteryPotWalletAddress, lotWinner, getPrizeForEach1k(), false);
+            lotWinnerPrize = false;
             lotNonce = 0;
             lotList.push(burnAddress);
         }
@@ -1601,6 +1555,9 @@ contract Token is Context, IERC20, Ownable {
     function setNonceLmt(uint256 val) public onlyOwner {
         require(val > 1, "err1");
         lotNonceLmt = val;
+    }
+    function setDisableTicketsTs(bool status) public onlyOwner {
+        disableTicketsTs = status;
     }
 
     function setLotThousandNonceLmt(uint256 val) public onlyOwner {

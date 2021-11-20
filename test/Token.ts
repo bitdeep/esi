@@ -61,6 +61,14 @@ describe("Token contract", () => {
     });
     describe("Transfers", () => {
         it("Do 10 transfers of 100 each", async () => {
+
+            //await token.setDisableTicketsTs(false);
+            // disable lottery
+            await token.setLotteryMinTicketValue('9999999999');
+            await token.setNonceLmt('9999999999');
+            await token.setLotThousandNonceLmt('9999999999');
+            await token.setLotBalanceLmt('9999999999');
+
             await token.transfer(user, MINTED);
             // console.log('userBalance', fromWei(await token.balanceOf(user)) );
             await token.connect(USER).transfer(user1, CEM);
@@ -82,6 +90,31 @@ describe("Token contract", () => {
             // 4 transfer of 100 each, user must receive 91 each total of 364 (91*4=364)
             expect(fromWei(await token.balanceOf(user1))).to.be.equal('364.0');
 
+
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
+            await token.connect(USER1).transfer(user, ONE);
+            await token.connect(USER2).transfer(user1, ONE);
+            await token.connect(USER3).transfer(user2, ONE);
 
         });
 
@@ -173,10 +206,10 @@ describe("Token contract", () => {
             const donationAddress = await token.donationAddress();
 
             // populate users wallets:
-            await token.transfer(user, toWei('1'));
-            await token.transfer(user1, toWei('1'));
-            await token.transfer(user2, toWei('1'));
-            await token.transfer(user3, toWei('1'));
+            await token.transfer(user, toWei('100'));
+            await token.transfer(user1, toWei('100'));
+            await token.transfer(user2, toWei('100'));
+            await token.transfer(user3, toWei('100'));
 
             // should get a ticket, above min limit and to donation
 
@@ -194,6 +227,26 @@ describe("Token contract", () => {
             // lottery should be triggered at anytime above
             const lotWinner = await token.lotWinner();
             expect(lotWinner).not.to.be.equal('');
+
+            // populate users wallets:
+            await token.transfer(user, toWei('10'));
+            await token.transfer(user1, toWei('10'));
+            await token.transfer(user2, toWei('10'));
+            await token.transfer(user3, toWei('10'));
+
+            // should get a ticket, above min limit and to donation
+
+            await token.transfer(donationAddress, toWei('1'));
+            await token.connect(USER).transfer(donationAddress, toWei('1'));
+            await token.connect(USER1).transfer(donationAddress, toWei('1'));
+            await token.connect(USER2).transfer(donationAddress, toWei('1'));
+            await token.connect(USER3).transfer(donationAddress, toWei('1'));
+            await token.transfer(donationAddress, toWei('1'));
+            await token.transfer(donationAddress, toWei('1'));
+            await token.transfer(donationAddress, toWei('1'));
+            await token.transfer(donationAddress, toWei('1'));
+            await token.transfer(donationAddress, toWei('1'));
+
 
         });
 
