@@ -798,15 +798,15 @@ contract Token is Context, IERC20, Ownable {
     string private _symbol = "TSTv3";
     uint8 private _decimals = 9;
 
-    address public donationAddress = 0xA3C92Fa5345F07485FE2c223Bd957827c6F48495;
-    address public holderAddress = 0xe19c433a834e3cefB127fF4b50Ed626d8E3F0e58;
+    address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
+    address public holderAddress = 0x05aA6575142d44a4a7E0EA40314065C4fE9e6a57;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
-    address public charityWalletAddress = 0xEddC9dAFDC8e01700a8Ede256F7efe07eDE29A72;
+    address public charityWalletAddress = 0x2a80B9b0A833979f50c889Cb30c681E4E5b1899c;
 
     // temporary address until we get correct final addresses:
-    address public devFundWalletAddress = 0x000000000000000000000000000000000000000A;
-    address public marketingFundWalletAddress = 0x000000000000000000000000000000000000000b;
-    address public lotteryPotWalletAddress = 0x000000000000000000000000000000000000000C;
+    address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
+    address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
+    address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
 
     uint256 public _distributionFee = 10; //1%
     uint256 private _previousDistributionFee = _distributionFee;
