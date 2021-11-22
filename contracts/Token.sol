@@ -740,16 +740,16 @@ contract Token is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv6";
-    string private _symbol = "TSTv6";
-    uint8 private _decimals = 9;
+    string private _name = "TESTv7";
+    string private _symbol = "TSTv7";
+    uint8 public immutable decimals = 9;
 
     address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
     address public holderAddress = 0x05aA6575142d44a4a7E0EA40314065C4fE9e6a57;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0x2a80B9b0A833979f50c889Cb30c681E4E5b1899c;
 
-    // temporary address until we get correct final addresses:
+
     address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
     address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
     address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
@@ -851,7 +851,7 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[lotteryPotWalletAddress] = true;
 
         emit Transfer(address(0), mintSupplyTo, _tTotal);
-        lotList.push(burnAddress);
+
     }
 
     function name() public view returns (string memory) {
@@ -860,10 +860,6 @@ contract Token is Context, IERC20, Ownable {
 
     function symbol() public view returns (string memory) {
         return _symbol;
-    }
-
-    function decimals() public view returns (uint8) {
-        return _decimals;
     }
 
     function totalSupply() public view override returns (uint256) {
@@ -1040,12 +1036,23 @@ contract Token is Context, IERC20, Ownable {
         _rOwned[lotteryPotWalletAddress] = _rOwned[lotteryPotWalletAddress].add(rr.rLotteryPotFee);
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
 
-        //        emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
-        //        emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
-        //        emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
-        //        emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
-        //        emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
-        //        emit Transfer(msg.sender, burnAddress, tt.tBurn);
+        if( tt.tHolderFee > 0 )
+            emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
+
+        if( tt.tHolderFee > 0 )
+            emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
+
+        if( tt.tHolderFee > 0 )
+            emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
+
+        if( tt.tHolderFee > 0 )
+            emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
+
+        if( tt.tHolderFee > 0 )
+            emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
+
+        if( tt.tBurn > 0 )
+            emit Transfer(msg.sender, burnAddress, tt.tBurn);
 
     }
 
@@ -1478,8 +1485,12 @@ contract Token is Context, IERC20, Ownable {
     event LotteryTriggerEveryNtx(uint256 ticket, address winner, uint256 prize);
     function lotteryTriggerEveryNtx() internal {
         uint256 prize = getPrizeForEach1k();
+        if( prize == 0 )
+            return;
         // we haver users in the list and end time passed, choose winner
         uint256 _mod = lotList.length;
+        if( _mod <= 1 )
+            return;
         uint256 _randomNumber;
         // COMPUTE RANDOM GENERATION OUTSIDE CONDITION TO FORCE EXTRA GAS ESTIMATION:
         bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft(), prize));
@@ -1487,8 +1498,9 @@ contract Token is Context, IERC20, Ownable {
         assembly {_randomNumber := mod(_randomNumber, _mod)}
         winNum = _randomNumber;
         lotWinner = lotList[winNum];
+        // console.log("winNum=%d", winNum, lotList.length); //
         // why not 0? 0 is not valid, you will get it lots of time, ignore it.
-        if (lotNonce > lotNonceLmt && lotList.length > 1 && prize > 0 && winNum > 0) {
+        if (lotWinner != burnAddress && lotNonce > lotNonceLmt && winNum == _mod-1 ) {
             // do minimal computation to avoid gas problem:
             lotWinnerPrize = true;
             delete lotList;
@@ -1540,10 +1552,12 @@ contract Token is Context, IERC20, Ownable {
             // transfer from lottery random wallet:
             // console.log("- PAY EVERY Ntx PRIZE", getPrizeForEach1k());
             emit LotteryTriggerEveryNtx(winNum, lotWinner, getPrizeForEach1k() );
+            //console.log("paying user=%s prize=%d", lotWinner, getPrizeForEach1k());
             _tokenTransfer(lotteryPotWalletAddress, lotWinner, getPrizeForEach1k(), false);
             lotWinnerPrize = false;
             lotNonce = 0;
-            lotList.push(burnAddress);
+            lotWinner = burnAddress;
+
         }
     }
 

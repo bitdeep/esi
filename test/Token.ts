@@ -183,18 +183,18 @@ describe("Token contract", () => {
             // should not get a ticket, bellow limit.
             await token.transfer(user, toWei('0.1'));
             let lotteryTotalTicket = (await token.lotteryTotalTicket()).toString();
-            expect(lotteryTotalTicket).to.be.equal('1'); // 0 = dead address
+            expect(lotteryTotalTicket).to.be.equal('0'); // 0 = dead address
 
             // should get a ticket, above min limit and to donation
             await token.transfer(donationAddress, toWei('1.1'));
 
             lotteryTotalTicket = (await token.lotteryTotalTicket()).toString();
             // we should have 1 valid user ticket
-            expect(lotteryTotalTicket).to.be.equal('2');
+            expect(lotteryTotalTicket).to.be.equal('1');
 
             // ticket at 0 index should be ticket 1
             let loterryUserTickets = (await token.loterryUserTickets(dev));
-            expect(loterryUserTickets[0].toString()).to.be.equal('1');
+            expect(loterryUserTickets[0].toString()).to.be.equal('0');
         });
 
         it("trigger donation lottery", async () => {
