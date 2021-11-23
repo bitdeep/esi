@@ -1447,7 +1447,7 @@ contract Token is Context, IERC20, Ownable {
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
         lotNonce = lotNonce.add(1);
         if (value >= lotteryMinTicketValue && to == donationAddress) {
-            // unser transferring above min, add to lottery
+            // user transferring above min, add to lottery
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
                 // console.log("donation: ", user, value, lotList.length);
@@ -1487,7 +1487,7 @@ contract Token is Context, IERC20, Ownable {
         uint256 prize = getPrizeForEach1k();
         if( prize == 0 )
             return;
-        // we haver users in the list and end time passed, choose winner
+        // we have users in the list and end time passed, choose winner
         uint256 _mod = lotList.length;
         if( _mod <= 1 )
             return;
