@@ -792,28 +792,22 @@ contract Token is Context, IERC20, Ownable {
 
     // mint transfer value to get a ticket
     uint256 public lotteryMinTicketValue = 1_000_000_000;
-    address[] public lotList; // list of tickets for 1000 tx prize
     uint256 public endtime; // when lottery period end and prize get distributed
-    uint256 public winNum; // index of last winner
-    address public lotWinner; // last random winner
-    bool public lotWinnerPrize = false; // amount to be paid on next interaction
-    address public lotHolderWinner; // last holder winner
-    bool public lotHolderPrize = false; // amount to be paid on next interaction
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs; // disable on testing env only
-    uint256 public lotNonce;
-    uint256 public lotNonceLmt = 3; // TODO: CHANGE THIS TO 1000
 
+    address[] private lottery1of1kUsers; // list of tickets for 1000 tx prize
+    uint256 public lottery1of1kIndex; // index of last winner
+    address public lottery1of1kWinner; // last random winner
+    uint256 public lottery1of1kLimit = 3; // TODO: CHANGE THIS TO 1000
 
-    // bin balance user should maintain to be elegible for holder lottery.
-    uint256 public lotBalanceLmt = 100_000_000_000; // 100
+    uint256 public lotteryHoldersLimit = 3;
+    uint256 public lotteryHoldersIndex = 0;
+    address public lotteryHoldersWinner;
+    uint256 public lotteryHolderMinBalance = 100_000_000_000; // 100
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
-
-    // size of random pool on each transfer, user that get 1 win the prize
-    uint256 public lotThousandNonceLmt = 3; // TODO: CHANGE THIS TO 1000
-
 
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
@@ -1443,28 +1437,15 @@ contract Token is Context, IERC20, Ownable {
     }
 
     // process both lottery
-    event LotteryAddTicket(address from, address to, uint256 amount, uint256 ticket);
+
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
-        lotNonce = lotNonce.add(1);
-        if (value >= lotteryMinTicketValue && to == donationAddress) {
-            // user transferring above min, add to lottery
-            uint256 uts = userTicketsTs[user];
-            if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
-                // console.log("donation: ", user, value, lotList.length);
-                lotList.push(user);
-                userTicketsTs[user] = block.timestamp;
-                emit LotteryAddTicket(user, to, value, lotList.length);
-            }else{
-                // console.log("BLOCKED ", user, value);
-            }
-        }
+        lotteryHoldersIndex++;
+        lottery1of1kPreProcess(user, to, value);
         doPendingTransfers();
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
-        lotteryTriggerEveryNtx();
-        lotteryTriggerOneOfThousandTx();
+        lotteryHolderChooseOne();
     }
-
     // add and remove users according to their balance from holder lottery
     //event LotteryAddToHolder(address from, bool status);
     function addUserToBalanceLottery(address user) internal {
@@ -1472,9 +1453,9 @@ contract Token is Context, IERC20, Ownable {
             uint256 balance = balanceOf(user);
             bool exists = ticketsByBalance.exists(user);
             // emit LotteryAddToHolder(user, exists);
-            if (balance >= lotBalanceLmt && !exists) {
+            if (balance >= lotteryHolderMinBalance && !exists) {
                 ticketsByBalance.pushAddress(user, false);
-            } else if (balance < lotBalanceLmt && exists) {
+            } else if (balance < lotteryHolderMinBalance && exists) {
                 ticketsByBalance.removeAddress(user);
             }
         }
@@ -1482,113 +1463,73 @@ contract Token is Context, IERC20, Ownable {
 
     // 0.5% for holders of certain amount of tokens for random chance every 1000 tx
     // lottery that get triggered on N number of TX
+    event lottery1of1kTicket(address user, address to, uint256 value, uint256 lottery1of1kIndex, uint256 lottery1of1kUsers);
     event LotteryTriggerEveryNtx(uint256 ticket, address winner, uint256 prize);
-    function lotteryTriggerEveryNtx() internal {
+    function lottery1of1kPreProcess(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
-        if( prize == 0 )
-            return;
-        // we have users in the list and end time passed, choose winner
-        uint256 _mod = lotList.length;
-        if( _mod <= 1 )
-            return;
-        uint256 _randomNumber;
-        // COMPUTE RANDOM GENERATION OUTSIDE CONDITION TO FORCE EXTRA GAS ESTIMATION:
-        bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft(), prize));
-        _randomNumber = uint256(_structHash);
-        assembly {_randomNumber := mod(_randomNumber, _mod)}
-        winNum = _randomNumber;
-        lotWinner = lotList[winNum];
-        // console.log("winNum=%d", winNum, lotList.length); //
-        // why not 0? 0 is not valid, you will get it lots of time, ignore it.
-        if (lotWinner != burnAddress && lotNonce > lotNonceLmt && winNum == _mod-1 ) {
-            // do minimal computation to avoid gas problem:
-            lotWinnerPrize = true;
-            delete lotList;
+        if (value >= lotteryMinTicketValue && to == donationAddress) {
+            uint256 uts = userTicketsTs[user];
+            if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
+                lottery1of1kIndex++;
+                lottery1of1kUsers.push(user);
+                userTicketsTs[user] = block.timestamp;
+                emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
+            }
+        }
+        if( prize > 0 && lottery1of1k == lottery1of1kLimit ){
+            uint256 _mod = lottery1of1kUsers.length;
+            if( lottery1of1kUsers.length <= 10 ) return;
+            uint256 _randomNumber;
+            bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft(), prize));
+            _randomNumber = uint256(_structHash);
+            assembly {_randomNumber := mod(_randomNumber, _mod)}
+            lottery1of1kIndex = _randomNumber; // to debug
+            lottery1of1kWinner = lottery1of1kUsers[lottery1of1kIndex];
+            emit LotteryTriggerEveryNtx(lottery1of1kIndex, lottery1of1kWinner, prize );
+            _tokenTransfer(lotteryPotWalletAddress, lottery1of1kWinner, prize, false);
+            lottery1of1kStatus = false;
+            lottery1of1kIndex = 0;
+            delete lottery1of1kUsers;
         }
     }
 
-    // 0.5% for people who donate over a certain amount for random chance 1/1000 when making donation
-    // lottery that get triggered when user get 1 from a pool of 1/1000
+
     event LotteryTriggerOneOfThousandTx(uint256 tickets, address winner, uint256 prize);
-    function lotteryTriggerOneOfThousandTx() internal {
-        uint256 prize = balanceOf(lotteryPotWalletAddress);
-        if( ticketsByBalance.size() > 1 && prize > 0 ){
-            // ALL OUTSIDE THE IF TO FORCE ADDITIONAL GAS COMPUTATION:
-            // we haver users in the list and end time passed, choose winner
-            uint256 _mod = lotThousandNonceLmt;
-            // need to be local var
+    function lotteryHolderChooseOne() internal {
+        uint256 prize = getPrizeForHolders();
+        uint256 holders = ticketsByBalance.size();
+        if( holders > 10 && prize > 0 && lotteryHoldersIndex == lotteryHoldersLimit ){
+            uint256 _mod = holders-1;
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-
-            if ( _randomNumber > 0 && _randomNumber < ticketsByBalance.size() ) {
-
-                // pre-select a possible winner outside random to force gas computation:
-                // console.log("**", ticketsByBalance.size(), _randomNumber );
-                lotHolderWinner = ticketsByBalance.getAddressAtIndex(_randomNumber);
-
-                // console.log("-_randomNumber=%s mod=%s", _randomNumber, (lotThousandNonceLmt-1) );
-                // loter 1/1000 only get triggered if the mod is 1000
-                // avoid 0 or it get triggered constantly.
-                if (_randomNumber == (lotThousandNonceLmt-1)) {
-                    // console.log("NTX", ticketsByBalance.size(), _randomNumber, _mod);
-                    // do minimal computation here to avoid gas problem:
-                    lotHolderPrize = true;
-                }
+            lotHolderWinner = ticketsByBalance.getAddressAtIndex(_randomNumber);
+            if( lotHolderPrize == true && getPrizeForHolders() > 0 ){
+                emit LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotHolderWinner, getPrizeForHolders());
+                _tokenTransfer(holderAddress, lotHolderWinner, getPrizeForHolders(), false);
+                lotteryHoldersIndex = 0;
             }
         }
     }
-
-    function doPendingTransfers() internal {
-        if( lotHolderPrize == true && getPrizeForHolders() > 0 ){
-            // console.log("- PAY HOLDER PRIZE", getPrizeForHolders());
-            // transfer from lottery random wallet:
-            emit LotteryTriggerOneOfThousandTx(ticketsByBalance.size(), lotHolderWinner, getPrizeForHolders());
-            _tokenTransfer(holderAddress, lotHolderWinner, getPrizeForHolders(), false);
-            lotHolderPrize = false;
-        }
-        if( lotWinnerPrize == true && getPrizeForEach1k() > 0 ){
-            // transfer from lottery random wallet:
-            // console.log("- PAY EVERY Ntx PRIZE", getPrizeForEach1k());
-            emit LotteryTriggerEveryNtx(winNum, lotWinner, getPrizeForEach1k() );
-            //console.log("paying user=%s prize=%d", lotWinner, getPrizeForEach1k());
-            _tokenTransfer(lotteryPotWalletAddress, lotWinner, getPrizeForEach1k(), false);
-            lotWinnerPrize = false;
-            lotNonce = 0;
-            lotWinner = burnAddress;
-
-        }
+    function setlottery1of1kLimit(uint256 val) public onlyOwner {
+        lottery1of1kLimit = val;
     }
-
-    function setLotteryMinTicketValue(uint256 val) public onlyOwner {
-        require(val > 1, "err1");
-        lotteryMinTicketValue = val;
-    }
-
-    function setNonceLmt(uint256 val) public onlyOwner {
-        require(val > 1, "err1");
-        lotNonceLmt = val;
+    function setlotteryHoldersLimit(uint256 val) public onlyOwner {
+        lotteryHoldersLimit = val;
     }
     function setDisableTicketsTs(bool status) public onlyOwner {
         disableTicketsTs = status;
     }
-
-    function setLotThousandNonceLmt(uint256 val) public onlyOwner {
-        require(val > 1, "err2");
-        lotThousandNonceLmt = val;
-    }
-
-    function setLotBalanceLmt(uint256 val) public onlyOwner {
-        require(val > 1, "err1");
-        lotBalanceLmt = val;
+    function setLotteryHolderMinBalance(uint256 val) public onlyOwner {
+        lotteryHolderMinBalance = val;
     }
 
     function loterryUserTickets(address _user) public view returns (uint256[] memory){
-        uint[] memory my = new uint256[](lotList.length);
+        uint[] memory my = new uint256[](lottery1of1kUsers.length);
         uint count;
-        for (uint256 i = 0; i < lotList.length; i++) {
-            if (lotList[i] == _user) {
+        for (uint256 i = 0; i < lottery1of1kUsers.length; i++) {
+            if (lottery1of1kUsers[i] == _user) {
                 my[count++] = i;
             }
         }
@@ -1596,7 +1537,7 @@ contract Token is Context, IERC20, Ownable {
     }
 
     function lotteryTotalTicket() public view returns (uint256){
-        return lotList.length;
+        return lottery1of1kUsers.length;
     }
 
 }
