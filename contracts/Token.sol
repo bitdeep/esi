@@ -1023,7 +1023,7 @@ contract Token is Context, IERC20, Ownable {
 
     //to recieve ETH from uniswapV2Router when swaping
     receive() external payable {}
-
+    event feeTransfer(address indexed from, address indexed to, uint256 value);
     function _reflectFee(rInfo memory rr, tInfo memory tt) private {
         _rTotal = _rTotal.sub(rr.rDistributionFee);
         _tFeeTotal = _tFeeTotal.add(tt.tDistributionFee).add(tt.tCharityFee).add(tt.tDevFundFee)
@@ -1037,22 +1037,22 @@ contract Token is Context, IERC20, Ownable {
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
 
         if( tt.tHolderFee > 0 )
-            emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
+            emit feeTransfer(msg.sender, holderAddress, tt.tHolderFee);
 
-        if( tt.tHolderFee > 0 )
-            emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
+        if( tt.tCharityFee > 0 )
+            emit feeTransfer(msg.sender, charityWalletAddress, tt.tCharityFee);
 
-        if( tt.tHolderFee > 0 )
-            emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
+        if( tt.tDevFundFee > 0 )
+            emit feeTransfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
 
-        if( tt.tHolderFee > 0 )
-            emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
+        if( tt.tMarketingFundFee > 0 )
+            emit feeTransfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
 
-        if( tt.tHolderFee > 0 )
-            emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
+        if( tt.tLotteryPotFee > 0 )
+            emit feeTransfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
 
         if( tt.tBurn > 0 )
-            emit Transfer(msg.sender, burnAddress, tt.tBurn);
+            emit feeTransfer(msg.sender, burnAddress, tt.tBurn);
 
     }
 
