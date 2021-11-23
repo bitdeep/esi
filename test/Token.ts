@@ -61,16 +61,7 @@ describe("Token contract", () => {
     });
     describe("Transfers", () => {
         it("Do 10 transfers of 100 each", async () => {
-
-            //await token.setDisableTicketsTs(false);
-            // disable lottery
-            await token.setLotteryMinTicketValue('9999999999');
-            await token.setNonceLmt('9999999999');
-            await token.setLotThousandNonceLmt('9999999999');
-            await token.setLotBalanceLmt('9999999999');
-
             await token.transfer(user, MINTED);
-            // console.log('userBalance', fromWei(await token.balanceOf(user)) );
             await token.connect(USER).transfer(user1, CEM);
             await token.connect(USER).transfer(user1, CEM);
             await token.connect(USER).transfer(user1, CEM);
@@ -117,6 +108,7 @@ describe("Token contract", () => {
             await token.connect(USER3).transfer(user2, ONE);
 
         });
+
 
         it("Do transfer and check balances", async () => {
 
@@ -165,13 +157,15 @@ describe("Token contract", () => {
             expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
 
         });
+
     });
 
     describe("Loterry Tests", () => {
+
         it("transfer above limit ticket test", async () => {
 
-            // avoid tro tigger holder lottery
-            await token.setLotBalanceLmt('1000000000000000000000000');
+            // enable holder lottery
+            await token.setLottery1of1kEnabled(true);
 
             // the donation address, if we transfer to this address, we get a ticket
             const donationAddress = await token.donationAddress();
@@ -197,10 +191,10 @@ describe("Token contract", () => {
             expect(loterryUserTickets[0].toString()).to.be.equal('0');
         });
 
-        it("trigger donation lottery", async () => {
+        it("lottery1of1k", async () => {
 
-            // to force trigger of holder lottery
-            await token.setLotBalanceLmt( toWei('1') );
+            // enable holder lottery
+            await token.setLottery1of1kEnabled(true);
 
             // the donation address, if we transfer to this address, we get a ticket
             const donationAddress = await token.donationAddress();
@@ -225,8 +219,8 @@ describe("Token contract", () => {
             await token.transfer(donationAddress, toWei('1'));
 
             // lottery should be triggered at anytime above
-            const lotWinner = await token.lotWinner();
-            expect(lotWinner).not.to.be.equal('');
+            const lottery1of1kWinner = await token.lottery1of1kWinner();
+            expect(lottery1of1kWinner).not.to.be.equal('');
 
             // populate users wallets:
             await token.transfer(user, toWei('10'));
@@ -250,36 +244,38 @@ describe("Token contract", () => {
 
         });
 
-        it("trigger random lottery", async () => {
+        it("lotteryHolders", async () => {
 
-            // to force trigger of random lottery
-            await token.setNonceLmt( toWei('3') );
-
+            await token.setLotteryHoldersEnabled(true);
+            const lotteryHolderMinBalance = toWei('1000');
             // mass transfer to
-            await token.transfer(user, toWei('100'));
-            await token.transfer(user1, toWei('100'));
-            await token.transfer(user2, toWei('100'));
-            await token.transfer(user3, toWei('100'));
+            await token.transfer(user, toWei('10000'));
+
+            await token.connect(USER).transfer(user1, lotteryHolderMinBalance);
+            await token.connect(USER).transfer(user2, lotteryHolderMinBalance);
+            await token.connect(USER).transfer(user3, lotteryHolderMinBalance);
 
             await token.connect(USER).transfer(dev, toWei('1'));
             await token.connect(USER1).transfer(dev, toWei('1'));
             await token.connect(USER2).transfer(dev, toWei('1'));
+            await token.connect(USER).transfer(user1, lotteryHolderMinBalance);
             await token.connect(USER3).transfer(dev, toWei('1'));
             await token.connect(USER).transfer(dev, toWei('1'));
             await token.connect(USER1).transfer(dev, toWei('1'));
+            await token.connect(USER).transfer(user1, lotteryHolderMinBalance);
             await token.connect(USER2).transfer(dev, toWei('1'));
             await token.connect(USER3).transfer(dev, toWei('1'));
             await token.connect(USER).transfer(dev, toWei('1'));
+            await token.connect(USER).transfer(user1, lotteryHolderMinBalance);
             await token.connect(USER1).transfer(dev, toWei('1'));
             await token.connect(USER2).transfer(dev, toWei('1'));
+            await token.connect(USER).transfer(user1, lotteryHolderMinBalance);
             await token.connect(USER3).transfer(dev, toWei('1'));
 
-            // here we should have a winner
-            const lotHolderWinner = await token.lotHolderWinner();
-            expect(lotHolderWinner).not.to.be.equal('');
 
         });
 
 
     });
+
 });
