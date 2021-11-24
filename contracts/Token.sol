@@ -749,8 +749,8 @@ contract Token is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv7";
-    string private _symbol = "TSTv7";
+    string private _name = "TESTv9";
+    string private _symbol = "TSTv9";
     uint8 public immutable decimals = 9;
 
     address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -804,17 +804,17 @@ contract Token is Context, IERC20, Ownable {
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
-    bool public lottery1of1kDebug = true; // disable on testing env only
+    bool public lottery1of1kDebug = false; // disable on testing env only
 
-    bool public lottery1of1kEnabled = false;
+    bool public lottery1of1kEnabled = true;
     address[] private lottery1of1kUsers; // list of tickets for 1000 tx prize
     uint256 public lottery1of1kIndex; // index of last winner
     address public lottery1of1kWinner; // last random winner
     uint256 public lottery1of1kLimit = 3; // TODO: CHANGE THIS TO 1000
     uint256 public lottery1of1kMinLimit = 3;
 
-    bool public lotteryHoldersEnabled = false;
-    bool public lotteryHoldersDebug = true;
+    bool public lotteryHoldersEnabled = true;
+    bool public lotteryHoldersDebug = false;
     uint256 public lotteryHoldersLimit = 3;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
@@ -857,6 +857,18 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[mintSupplyTo] = true;
         _isExcludedFromFee[lotteryPotWalletAddress] = true;
+        _isExcludedFromFee[donationAddress] = true;
+        _isExcludedFromFee[devFundWalletAddress] = true;
+        _isExcludedFromFee[marketingFundWalletAddress] = true;
+        _isExcludedFromFee[holderAddress] = true;
+        _isExcludedFromFee[charityWalletAddress] = true;
+        _isExcludedFromFee[burnAddress] = true;
+
+
+        address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
+        address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
+        address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
+
 
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
@@ -1513,14 +1525,14 @@ contract Token is Context, IERC20, Ownable {
     function lottery1of1k(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
         if (value >= lotteryMinTicketValue && to == donationAddress) {
-            // if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", donationAddress, value, lottery1of1kLimit);
+//             if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", donationAddress, value, lottery1of1kLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
                 lottery1of1kIndex++;
                 lottery1of1kUsers.push(user);
                 userTicketsTs[user] = block.timestamp;
                 emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
-                // if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
+//                 if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
             }
         }
         if (prize > 0 && lottery1of1kIndex >= lottery1of1kLimit) {
@@ -1535,7 +1547,6 @@ contract Token is Context, IERC20, Ownable {
             _tokenTransfer(lotteryPotWalletAddress, lottery1of1kWinner, prize, false);
 //            if(lottery1of1kDebug){
 //                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
-//                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
 //                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
 //            }
             lottery1of1kIndex = 0;
