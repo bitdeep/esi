@@ -865,11 +865,6 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[burnAddress] = true;
 
 
-        address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
-        address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
-        address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
-
-
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
     }
@@ -1525,14 +1520,14 @@ contract Token is Context, IERC20, Ownable {
     function lottery1of1k(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
         if (value >= lotteryMinTicketValue && to == donationAddress) {
-//             if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", donationAddress, value, lottery1of1kLimit);
+            //             if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", donationAddress, value, lottery1of1kLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
                 lottery1of1kIndex++;
                 lottery1of1kUsers.push(user);
                 userTicketsTs[user] = block.timestamp;
                 emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
-//                 if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
+                //                 if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
             }
         }
         if (prize > 0 && lottery1of1kIndex >= lottery1of1kLimit) {
@@ -1545,10 +1540,10 @@ contract Token is Context, IERC20, Ownable {
             lottery1of1kWinner = lottery1of1kUsers[_randomNumber];
             emit LotteryTriggerEveryNtx(_randomNumber, lottery1of1kWinner, prize);
             _tokenTransfer(lotteryPotWalletAddress, lottery1of1kWinner, prize, false);
-//            if(lottery1of1kDebug){
-//                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
-//                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
-//            }
+            //            if(lottery1of1kDebug){
+            //                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
+            //                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
+            //            }
             lottery1of1kIndex = 0;
             delete lottery1of1kUsers;
         }
@@ -1563,12 +1558,12 @@ contract Token is Context, IERC20, Ownable {
             // emit LotteryAddToHolder(user, exists);
             if (balance >= lotteryHolderMinBalance && !exists) {
                 ticketsByBalance.pushAddress(user, false);
-//                if(lotteryHoldersDebug)
-//                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+                //                if(lotteryHoldersDebug)
+                //                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
             } else if (balance < lotteryHolderMinBalance && exists) {
                 ticketsByBalance.removeAddress(user);
-//                if(lotteryHoldersDebug)
-//                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+                //                if(lotteryHoldersDebug)
+                //                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
             }
         }
     }
@@ -1579,9 +1574,9 @@ contract Token is Context, IERC20, Ownable {
         uint256 holders = ticketsByBalance.size();
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
-//        if(lotteryHoldersDebug){
-//            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
-//        }
+        //        if(lotteryHoldersDebug){
+        //            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
+        //        }
         if (prize > 0 && lotteryHoldersIndex >= lotteryHoldersLimit) {
             uint256 _mod = holders - 1;
             uint256 _randomNumber;
@@ -1591,10 +1586,10 @@ contract Token is Context, IERC20, Ownable {
             address winner = ticketsByBalance.getAddressAtIndex(_randomNumber);
             emit LotteryHolderChooseOne(ticketsByBalance.size(), winner, prize);
             _tokenTransfer(holderAddress, winner, prize, false);
-//            if(lotteryHoldersDebug){
-//                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
-//                console.log("\twinner%s rnd=", winner, _randomNumber);
-//            }
+            //            if(lotteryHoldersDebug){
+            //                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
+            //                console.log("\twinner%s rnd=", winner, _randomNumber);
+            //            }
             lotteryHoldersIndex = 0;
         }
     }
