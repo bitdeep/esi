@@ -862,7 +862,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address public lotteryHoldersWinner;
     uint256 public lotteryHolderMinBalance = 100_000_000_000; // 100
 
-    
+
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant TRANSFER_TYPEHASH = keccak256("Transfer(address owner,address to,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public immutable DOMAIN_SEPARATOR;
@@ -909,7 +909,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     event LogSwapin(bytes32 indexed txhash, address indexed account, uint amount);
     event LogSwapout(address indexed account, address indexed bindaddr, uint amount);
     event LogAddAuth(address indexed auth, uint timestamp);
-    
+
     modifier onlyAuth() {
         require(isMinter[msg.sender], "AnyswapV4ERC20: FORBIDDEN");
         _;
@@ -999,7 +999,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         return tokenFromReflection(_rOwned[account]);
     }
 
-   
+
     function mpc() public view returns (address) {
         if (block.timestamp >= delayVault) {
             return pendingVault;
@@ -1150,7 +1150,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         require(to != address(0) || to != address(this));
 
         _transfer(target, to , value);
-        
+
 
         return true;
     }
@@ -1178,8 +1178,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
      function _mint(address account, uint256 amount) internal {
          // TODO: implement correct mint functionality
         require(account != address(0), "ERC20: mint to the zero address");
-
-       
+         // we mint directly to _rOwned balance.
+        _rOwned[account] = _rOwned[account].add(amount);
         emit Transfer(address(0), account, amount);
     }
 
@@ -1197,7 +1197,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
         // TODO: implement correct burn functionality
-        
+        // we burn directly to _rOwned balance.
+        _rOwned[account] = _rOwned[account].sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
