@@ -504,76 +504,76 @@ interface IUniswapV2Factory {
     function setFeeToSetter(address) external;
 }
 
-interface IUniswapV2Pair {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+// interface IUniswapV2Pair {
+//     event Approval(address indexed owner, address indexed spender, uint value);
+//     event Transfer(address indexed from, address indexed to, uint value);
 
-    function name() external pure returns (string memory);
+//     function name() external pure returns (string memory);
 
-    function symbol() external pure returns (string memory);
+//     function symbol() external pure returns (string memory);
 
-    function decimals() external pure returns (uint8);
+//     function decimals() external pure returns (uint8);
 
-    function totalSupply() external view returns (uint);
+//     function totalSupply() external view returns (uint);
 
-    function balanceOf(address owner) external view returns (uint);
+//     function balanceOf(address owner) external view returns (uint);
 
-    function allowance(address owner, address spender) external view returns (uint);
+//     function allowance(address owner, address spender) external view returns (uint);
 
-    function approve(address spender, uint value) external returns (bool);
+//     function approve(address spender, uint value) external returns (bool);
 
-    function transfer(address to, uint value) external returns (bool);
+//     function transfer(address to, uint value) external returns (bool);
 
-    function transferFrom(address from, address to, uint value) external returns (bool);
+//     function transferFrom(address from, address to, uint value) external returns (bool);
 
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
+//     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
-    function PERMIT_TYPEHASH() external pure returns (bytes32);
+//     function PERMIT_TYPEHASH() external pure returns (bytes32);
 
-    function nonces(address owner) external view returns (uint);
+//     function nonces(address owner) external view returns (uint);
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+//     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
 
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
-    event Swap(
-        address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
-        address indexed to
-    );
-    event Sync(uint112 reserve0, uint112 reserve1);
+//     event Mint(address indexed sender, uint amount0, uint amount1);
+//     event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+//     event Swap(
+//         address indexed sender,
+//         uint amount0In,
+//         uint amount1In,
+//         uint amount0Out,
+//         uint amount1Out,
+//         address indexed to
+//     );
+//     event Sync(uint112 reserve0, uint112 reserve1);
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint);
+//     function MINIMUM_LIQUIDITY() external pure returns (uint);
 
-    function factory() external view returns (address);
+//     function factory() external view returns (address);
 
-    function token0() external view returns (address);
+//     function token0() external view returns (address);
 
-    function token1() external view returns (address);
+//     function token1() external view returns (address);
 
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+//     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 
-    function price0CumulativeLast() external view returns (uint);
+//     function price0CumulativeLast() external view returns (uint);
 
-    function price1CumulativeLast() external view returns (uint);
+//     function price1CumulativeLast() external view returns (uint);
 
-    function kLast() external view returns (uint);
+//     function kLast() external view returns (uint);
 
-    function mint(address to) external returns (uint liquidity);
+//     function mint(address to) external returns (uint liquidity);
 
-    function burn(address to) external returns (uint amount0, uint amount1);
+//     function burn(address to) external returns (uint amount0, uint amount1);
 
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+//     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
 
-    function skim(address to) external;
+//     function skim(address to) external;
 
-    function sync() external;
+//     function sync() external;
 
-    function initialize(address, address) external;
-}
+//     function initialize(address, address) external;
+// }
 
 interface IUniswapV2Router01 {
     function factory() external pure returns (address);
@@ -728,11 +728,53 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
         uint deadline
     ) external;
 }
+interface IERC2612 {
 
-contract Token is Context, IERC20, Ownable {
+    /**
+     * @dev Returns the current ERC2612 nonce for `owner`. This value must be
+     * included whenever a signature is generated for {permit}.
+     *
+     * Every successful call to {permit} increases ``owner``'s nonce by one. This
+     * prevents a signature from being used multiple times.
+     */
+    function nonces(address owner) external view returns (uint256);
+}
+interface IAnyswapV3ERC20 is IERC20, IERC2612 {
+
+    /// @dev Sets `value` as allowance of `spender` account over caller account's AnyswapV3ERC20 token,
+    /// after which a call is executed to an ERC677-compliant contract with the `data` parameter.
+    /// Emits {Approval} event.
+    /// Returns boolean value indicating whether operation succeeded.
+    /// For more information on approveAndCall format, see https://github.com/ethereum/EIPs/issues/677.
+    function approveAndCall(address spender, uint256 value, bytes calldata data) external returns (bool);
+
+    /// @dev Moves `value` AnyswapV3ERC20 token from caller's account to account (`to`),
+    /// after which a call is executed to an ERC677-compliant contract with the `data` parameter.
+    /// A transfer to `address(0)` triggers an ERC-20 withdraw matching the sent AnyswapV3ERC20 token in favor of caller.
+    /// Emits {Transfer} event.
+    /// Returns boolean value indicating whether operation succeeded.
+    /// Requirements:
+    ///   - caller account must have at least `value` AnyswapV3ERC20 token.
+    /// For more information on transferAndCall format, see https://github.com/ethereum/EIPs/issues/677.
+    function transferAndCall(address to, uint value, bytes calldata data) external returns (bool);
+}
+
+interface ITransferReceiver {
+    function onTokenTransfer(address, uint, bytes calldata) external returns (bool);
+}
+
+interface IApprovalReceiver {
+    function onTokenApproval(address, uint, bytes calldata) external returns (bool);
+}
+
+
+contract Token is IAnyswapV3ERC20, Context, Ownable {
     using SafeMath for uint256;
     using Address for address;
     using AddrArrayLib for AddrArrayLib.Addresses;
+
+    mapping (address => uint256) public override nonces;
+
 
     mapping(address => uint256) private _rOwned;
     mapping(address => uint256) private _tOwned;
@@ -820,6 +862,38 @@ contract Token is Context, IERC20, Ownable {
     address public lotteryHoldersWinner;
     uint256 public lotteryHolderMinBalance = 100_000_000_000; // 100
 
+    
+    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant TRANSFER_TYPEHASH = keccak256("Transfer(address owner,address to,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public immutable DOMAIN_SEPARATOR;
+
+        // init flag for setting immediate vault, needed for CREATE2 support
+    bool private _init;
+
+    // flag to enable/disable swapout vs vault.burn so multiple events are triggered
+    bool private _vaultOnly;
+
+    // configurable delay for timelock functions
+    uint public delay = 2*24*3600;
+
+
+    // set of minters, can be this bridge or other bridges
+    mapping(address => bool) public isMinter;
+    address[] public minters;
+
+    // primary controller of the token contract
+    address public vault;
+
+    address public pendingMinter;
+    uint public delayMinter;
+
+    address public pendingVault;
+    uint public delayVault;
+
+    uint public pendingDelay;
+    uint public delayDelay;
+
+
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
 
@@ -830,14 +904,28 @@ contract Token is Context, IERC20, Ownable {
         uint256 ethReceived,
         uint256 tokensIntoLiqudity
     );
+    event LogChangeVault(address indexed oldVault, address indexed newVault, uint indexed effectiveTime);
+    event LogChangeMPCOwner(address indexed oldOwner, address indexed newOwner, uint indexed effectiveHeight);
+    event LogSwapin(bytes32 indexed txhash, address indexed account, uint amount);
+    event LogSwapout(address indexed account, address indexed bindaddr, uint amount);
+    event LogAddAuth(address indexed auth, uint timestamp);
+    
+    modifier onlyAuth() {
+        require(isMinter[msg.sender], "AnyswapV4ERC20: FORBIDDEN");
+        _;
+    }
 
+    modifier onlyVault() {
+        require(msg.sender == mpc(), "AnyswapV3ERC20: FORBIDDEN");
+        _;
+    }
     modifier lockTheSwap {
         inSwapAndLiquify = true;
         _;
         inSwapAndLiquify = false;
     }
 
-    constructor (address mintSupplyTo, address router) public {
+    constructor (address mintSupplyTo, address router, address _underlying, address _vault) public {
         _rOwned[mintSupplyTo] = _rTotal;
 
         // we whitelist treasure and owner to allow pool management
@@ -865,6 +953,31 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[burnAddress] = true;
 
 
+        underlying = _underlying;
+        if (_underlying != address(0x0)) {
+            require(_decimals == IERC20(_underlying).decimals());
+        }
+
+        // Use init to allow for CREATE2 accross all chains
+        _init = true;
+
+        // Disable/Enable swapout for v1 tokens vs mint/burn for v3 tokens
+        _vaultOnly = false;
+
+        vault = _vault;
+        pendingVault = _vault;
+        delayVault = block.timestamp;
+
+        uint256 chainId;
+        assembly {chainId := chainid()}
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)));
+
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
     }
@@ -886,6 +999,95 @@ contract Token is Context, IERC20, Ownable {
         return tokenFromReflection(_rOwned[account]);
     }
 
+   
+    function mpc() public view returns (address) {
+        if (block.timestamp >= delayVault) {
+            return pendingVault;
+        }
+        return vault;
+    }
+
+    function setVaultOnly(bool enabled) external onlyVault {
+        _vaultOnly = enabled;
+    }
+
+    function initVault(address _vault) external onlyVault {
+        require(_init);
+        vault = _vault;
+        pendingVault = _vault;
+        isMinter[_vault] = true;
+        minters.push(_vault);
+        delayVault = block.timestamp;
+        _init = false;
+    }
+
+    function setMinter(address _auth) external onlyVault {
+        pendingMinter = _auth;
+        delayMinter = block.timestamp + delay;
+    }
+
+    function setVault(address _vault) external onlyVault {
+        pendingVault = _vault;
+        delayVault = block.timestamp + delay;
+    }
+
+    function applyVault() external onlyVault {
+        require(block.timestamp >= delayVault);
+        vault = pendingVault;
+    }
+
+    function applyMinter() external onlyVault {
+        require(block.timestamp >= delayMinter);
+        isMinter[pendingMinter] = true;
+        minters.push(pendingMinter);
+    }
+
+    // No time delay revoke minter emergency function
+    function revokeMinter(address _auth) external onlyVault {
+        isMinter[_auth] = false;
+    }
+
+    function getAllMinters() external view returns (address[] memory) {
+        return minters;
+    }
+
+
+    function changeVault(address newVault) external onlyVault returns (bool) {
+        require(newVault != address(0), "AnyswapV3ERC20: address(0x0)");
+        pendingVault = newVault;
+        delayVault = block.timestamp + delay;
+        emit LogChangeVault(vault, pendingVault, delayVault);
+        return true;
+    }
+
+    function changeMPCOwner(address newVault) public onlyVault returns (bool) {
+        require(newVault != address(0), "AnyswapV3ERC20: address(0x0)");
+        pendingVault = newVault;
+        delayVault = block.timestamp + delay;
+        emit LogChangeMPCOwner(vault, pendingVault, delayVault);
+        return true;
+    }
+
+    function permit(address target, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external override {
+        require(block.timestamp <= deadline, "AnyswapV3ERC20: Expired permit");
+
+        bytes32 hashStruct = keccak256(
+            abi.encode(
+                PERMIT_TYPEHASH,
+                target,
+                spender,
+                value,
+                nonces[target]++,
+                deadline));
+
+        require(verifyEIP712(target, hashStruct, v, r, s) || verifyPersonalSign(target, hashStruct, v, r, s));
+
+        // _approve(owner, spender, value);
+        _allowances[target][spender] = value;
+        emit Approval(target, spender, value);
+    }
+
+
     function transfer(address recipient, uint256 amount) public override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
@@ -899,6 +1101,27 @@ contract Token is Context, IERC20, Ownable {
         _approve(_msgSender(), spender, amount);
         return true;
     }
+    function approveAndCall(address spender, uint256 value, bytes calldata data) external override returns (bool) {
+        // _approve(msg.sender, spender, value);
+        _allowances[msg.sender][spender] = value;
+        emit Approval(msg.sender, spender, value);
+
+        return IApprovalReceiver(spender).onTokenApproval(msg.sender, value, data);
+    }
+      /// @dev Moves `value` AnyswapV3ERC20 token from caller's account to account (`to`),
+    /// after which a call is executed to an ERC677-compliant contract with the `data` parameter.
+    /// A transfer to `address(0)` triggers an ETH withdraw matching the sent AnyswapV3ERC20 token in favor of caller.
+    /// Emits {Transfer} event.
+    /// Returns boolean value indicating whether operation succeeded.
+    /// Requirements:
+    ///   - caller account must have at least `value` AnyswapV3ERC20 token.
+    /// For more information on transferAndCall format, see https://github.com/ethereum/EIPs/issues/677.
+    function transferAndCall(address to, uint value, bytes calldata data) external override returns (bool) {
+        require(to != address(0) || to != address(this));
+        _transfer(msg.sender, to, value);
+
+        return ITransferReceiver(to).onTokenTransfer(msg.sender, value, data);
+    }
 
     function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
         _transfer(sender, recipient, amount);
@@ -908,6 +1131,99 @@ contract Token is Context, IERC20, Ownable {
 
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
+        return true;
+    }
+      function transferWithPermit(address target, address to, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external override returns (bool) {
+        require(block.timestamp <= deadline, "AnyswapV3ERC20: Expired permit");
+
+        bytes32 hashStruct = keccak256(
+            abi.encode(
+                TRANSFER_TYPEHASH,
+                target,
+                to,
+                value,
+                nonces[target]++,
+                deadline));
+
+        require(verifyEIP712(target, hashStruct, v, r, s) || verifyPersonalSign(target, hashStruct, v, r, s));
+
+        require(to != address(0) || to != address(this));
+
+        _transfer(target, to , value);
+        
+
+        return true;
+    }
+
+    function verifyEIP712(address target, bytes32 hashStruct, uint8 v, bytes32 r, bytes32 s) internal view returns (bool) {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                hashStruct));
+        address signer = ecrecover(hash, v, r, s);
+        return (signer != address(0) && signer == target);
+    }
+    function verifyPersonalSign(address target, bytes32 hashStruct, uint8 v, bytes32 r, bytes32 s) internal view returns (bool) {
+        bytes32 hash = prefixed(hashStruct);
+        address signer = ecrecover(hash, v, r, s);
+        return (signer != address(0) && signer == target);
+    }
+
+    // Builds a prefixed hash to mimic the behavior of eth_sign.
+    function prefixed(bytes32 hash) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", DOMAIN_SEPARATOR, hash));
+    }
+
+     function _mint(address account, uint256 amount) internal {
+         // TODO: implement correct mint functionality
+        require(account != address(0), "ERC20: mint to the zero address");
+
+       
+        emit Transfer(address(0), account, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from `account`, reducing the
+     * total supply.
+     *
+     * Emits a {Transfer} event with `to` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `account` cannot be the zero address.
+     * - `account` must have at least `amount` tokens.
+     */
+    function _burn(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: burn from the zero address");
+        // TODO: implement correct burn functionality
+        
+        emit Transfer(account, address(0), amount);
+    }
+
+
+     function mint(address to, uint256 amount) external onlyAuth returns (bool) {
+        _mint(to, amount);
+        return true;
+    }
+
+    function burn(address from, uint256 amount) external onlyAuth returns (bool) {
+        require(from != address(0), "AnyswapV3ERC20: address(0x0)");
+        _burn(from, amount);
+        return true;
+    }
+
+    function Swapin(bytes32 txhash, address account, uint256 amount) public onlyAuth returns (bool) {
+        _mint(account, amount);
+        emit LogSwapin(txhash, account, amount);
+        return true;
+    }
+
+    function Swapout(uint256 amount, address bindaddr) public returns (bool) {
+        require(!_vaultOnly, "AnyswapV4ERC20: onlyAuth");
+        require(bindaddr != address(0), "AnyswapV3ERC20: address(0x0)");
+        _burn(msg.sender, amount);
+        emit LogSwapout(msg.sender, bindaddr, amount);
         return true;
     }
 
