@@ -1180,6 +1180,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         require(account != address(0), "ERC20: mint to the zero address");
          // we mint directly to _rOwned balance.
         _rOwned[account] = _rOwned[account].add(amount);
+        _rTotal = _rTotal.add(amount);
         emit Transfer(address(0), account, amount);
     }
 
@@ -1199,6 +1200,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         // TODO: implement correct burn functionality
         // we burn directly to _rOwned balance.
         _rOwned[account] = _rOwned[account].sub(amount);
+        _rTotal = _rTotal.sub(amount);
         emit Transfer(account, address(0), amount);
     }
 
