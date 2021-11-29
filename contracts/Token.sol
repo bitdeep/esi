@@ -742,6 +742,7 @@ contract Token is Context, IERC20, Ownable {
 
     mapping(address => bool) public _isExcluded;
     mapping(address => bool) public whitelist;
+
     address[] private _excluded;
 
     uint256 private constant MAX = ~uint256(0);
@@ -867,6 +868,45 @@ contract Token is Context, IERC20, Ownable {
 
         emit Transfer(address(0), mintSupplyTo, _tTotal);
 
+    }
+    function _mint(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: mint to the zero address");
+         // we mint directly to _rOwned balance.
+        _rOwned[account] = _rOwned[account].add(amount);
+        _rTotal = _rTotal.add(amount);
+        emit Transfer(address(0), account, amount);
+    }
+
+
+    /**
+     * @dev Destroys `amount` tokens from `account`, reducing the
+     * total supply.
+     *
+     * Emits a {Transfer} event with `to` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `account` cannot be the zero address.
+     * - `account` must have at least `amount` tokens.
+     */
+    function _burn(address account, uint256 amount) internal {
+        require(account != address(0), "ERC20: burn from the zero address");
+        // we burn directly to _rOwned balance.
+        _rOwned[account] = _rOwned[account].sub(amount);
+        _rTotal = _rTotal.sub(amount);
+        emit Transfer(account, address(0), amount);
+    }
+
+
+    function mint(address to, uint256 amount) external onlyOwner returns (bool) {
+        _mint(to, amount);
+        return true;
+    }
+
+    function burn(address from, uint256 amount) external onlyOwner returns (bool) {
+        require(from != address(0), "ERC20: address(0x0)");
+        _burn(from, amount);
+        return true;
     }
 
     function name() public view returns (string memory) {

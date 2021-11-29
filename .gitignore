@@ -7,3 +7,6 @@
 /accoupts.json
 .env
 
+/cache
+/.vscode
+/artifacts
