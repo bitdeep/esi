@@ -90,7 +90,7 @@ describe('Bank', async function () {
         await this.router.init(this.factory.address, this.weth.address, {from: dev});
 
         green('create token');
-        this.token = await Token.new(reserve, this.router.address, {from: dev, gasPrice: 0, gas: 6000000});
+        this.token = await Token.new(reserve, this.router.address, {from: dev});
 
         this.pairAddr = await this.factory.getPair(this.token.address, this.weth.address);
         this.pair = await IUniswapV2Pair.at(this.pairAddr);
@@ -109,33 +109,35 @@ describe('Bank', async function () {
         this.timeout(60000);
         await time.increase(hours(72));
         const TOKEN = this.token;
-        const donationAddress = await TOKEN.donationAddress();
 
+        const donation = '0x000000000000000000000000000000000000000d';
+        const testA = '0x000000000000000000000000000000000000000A';
         async function dump(title) {
             const tickets = await TOKEN.loterryUserTickets(user);
             const uts = await TOKEN.userTicketsTs(user);
             const t = await TOKEN.lotteryTotalTicket();
             const ts = await TOKEN.lotwinnerTimestamp();
-            const ticket = await TOKEN.winnum();
-            const prize = await TOKEN.lotsize();
-            const lotnonce = await TOKEN.lotnonce();
-            const lotwinner = await TOKEN.lotwinner();
-            const balanceOfPot = await TOKEN.balanceOf(donationAddress);
-            const balanceOfWiner = await TOKEN.balanceOf(lotwinner);
-            const balanceOfUser = await TOKEN.balanceOf(user);
-            yellow(title+' pot=' + fromGwei(balanceOfPot) + ' winner='+fromGwei(balanceOfWiner)+' user='+fromGwei(balanceOfUser)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);
+            const ticket = await TOKEN.winNum();
+            const prize = await TOKEN.getLotSize();
+            const lotnonce = await TOKEN.lotNonce();
+            const lotwinner = await TOKEN.lotWinner();
+            const balanceOfPot = await TOKEN.balanceOf(donation);
+            const balanceOfWiner = await TOKEN.balanceOf(testA);
+            yellow(title+' pot=' + fromGwei(balanceOfPot) + ' ba='+fromGwei(balanceOfWiner)+' nonce='+lotnonce+' prize=' + fromGwei(prize) + ' ticket=' + ticket + ' ts=' + ts+' uts='+uts+' t='+t+' tickets=', tickets);
         }
 
+        magenta('set random to 10');
+        // await this.token.setNonceLmt('4', {from: dev});
+
         await this.token.transfer(user, MINTED, {from: devaddr}); await dump('0');
-        await this.token.transfer(donationAddress, CEM, {from: user}); await dump(1);
+        await this.token.transfer(donation, CEM, {from: user}); await dump(1);
         await time.increase(hours(72));
-        await this.token.transfer(donationAddress, CEM, {from: user}); await dump(2);
+        await this.token.transfer(donation, CEM, {from: user}); await dump(2);
         await time.increase(hours(72));
-        await this.token.transfer(donationAddress, CEM, {from: user}); await dump(2);
+        await this.token.transfer(donation, CEM, {from: user}); await dump(2);
         await time.increase(hours(72));
-        await this.token.lottery({from: user});
         await this.token.transfer(user1, CEM, {from: user}); await dump(5);
-        await this.token.lottery({from: user});
+        await this.token.transfer(user1, CEM, {from: user}); await dump(6);
 
     });
 

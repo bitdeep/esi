@@ -6,8 +6,9 @@ module.exports = {
     networks: {
         dev: {
             host: "127.0.0.1",
-            port: 7545,
-            network_id: "*"
+            port: 8545,
+            network_id: "*",
+            gas: 23_450_000
         },
         testnet: {
             provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s3.binance.org:8545/`),
