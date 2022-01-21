@@ -1,12 +1,3 @@
-/**
-#LIQ+#RFI+#SHIB+#DOGE+#LOTTERY
-// 2% burn
-// 2% lp
-// 2% holders
-// 2% wallet1
-// 2% wallet2
-*/
-
 /*
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +6,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -795,7 +786,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     string private _symbol = "TSTv9";
     uint8 public immutable decimals = 9;
 
-    address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
+    // address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
     address public holderAddress = 0x05aA6575142d44a4a7E0EA40314065C4fE9e6a57;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0x2a80B9b0A833979f50c889Cb30c681E4E5b1899c;
@@ -862,70 +853,16 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address public lotteryHoldersWinner;
     uint256 public lotteryHolderMinBalance = 100_000_000_000; // 100
 
-
-    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant TRANSFER_TYPEHASH = keccak256("Transfer(address owner,address to,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public immutable DOMAIN_SEPARATOR;
-
-        // init flag for setting immediate vault, needed for CREATE2 support
-    bool private _init;
-
-    // flag to enable/disable swapout vs vault.burn so multiple events are triggered
-    bool private _vaultOnly;
-
-    // configurable delay for timelock functions
-    uint public delay = 2*24*3600;
-
-
-    // set of minters, can be this bridge or other bridges
-    mapping(address => bool) public isMinter;
-    address[] public minters;
-
-    // primary controller of the token contract
-    address public vault;
-
-    address public pendingMinter;
-    uint public delayMinter;
-
-    address public pendingVault;
-    uint public delayVault;
-
-    uint public pendingDelay;
-    uint public delayDelay;
-
-
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
 
-    event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
-    event SwapAndLiquifyEnabledUpdated(bool enabled);
-    event SwapAndLiquify(
-        uint256 tokensSwapped,
-        uint256 ethReceived,
-        uint256 tokensIntoLiqudity
-    );
-    event LogChangeVault(address indexed oldVault, address indexed newVault, uint indexed effectiveTime);
-    event LogChangeMPCOwner(address indexed oldOwner, address indexed newOwner, uint indexed effectiveHeight);
-    event LogSwapin(bytes32 indexed txhash, address indexed account, uint amount);
-    event LogSwapout(address indexed account, address indexed bindaddr, uint amount);
-    event LogAddAuth(address indexed auth, uint timestamp);
-
-    modifier onlyAuth() {
-        require(isMinter[msg.sender], "AnyswapV4ERC20: FORBIDDEN");
-        _;
-    }
-
-    modifier onlyVault() {
-        require(msg.sender == mpc(), "AnyswapV3ERC20: FORBIDDEN");
-        _;
-    }
     modifier lockTheSwap {
         inSwapAndLiquify = true;
         _;
         inSwapAndLiquify = false;
     }
 
-    constructor (address mintSupplyTo, address router, address _underlying, address _vault) public {
+    constructor (address mintSupplyTo, address router) public {
         _rOwned[mintSupplyTo] = _rTotal;
 
         // we whitelist treasure and owner to allow pool management
@@ -945,41 +882,13 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[mintSupplyTo] = true;
         _isExcludedFromFee[lotteryPotWalletAddress] = true;
-        _isExcludedFromFee[donationAddress] = true;
+        // _isExcludedFromFee[donationAddress] = true;
         _isExcludedFromFee[devFundWalletAddress] = true;
         _isExcludedFromFee[marketingFundWalletAddress] = true;
         _isExcludedFromFee[holderAddress] = true;
         _isExcludedFromFee[charityWalletAddress] = true;
         _isExcludedFromFee[burnAddress] = true;
-
-
-        underlying = _underlying;
-        if (_underlying != address(0x0)) {
-            require(_decimals == IERC20(_underlying).decimals());
-        }
-
-        // Use init to allow for CREATE2 accross all chains
-        _init = true;
-
-        // Disable/Enable swapout for v1 tokens vs mint/burn for v3 tokens
-        _vaultOnly = false;
-
-        vault = _vault;
-        pendingVault = _vault;
-        delayVault = block.timestamp;
-
-        uint256 chainId;
-        assembly {chainId := chainid()}
-        DOMAIN_SEPARATOR = keccak256(
-            abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
-                keccak256(bytes("1")),
-                chainId,
-                address(this)));
-
         emit Transfer(address(0), mintSupplyTo, _tTotal);
-
     }
 
     function name() public view returns (string memory) {
@@ -998,96 +907,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         if (_isExcluded[account]) return _tOwned[account];
         return tokenFromReflection(_rOwned[account]);
     }
-
-
-    function mpc() public view returns (address) {
-        if (block.timestamp >= delayVault) {
-            return pendingVault;
-        }
-        return vault;
-    }
-
-    function setVaultOnly(bool enabled) external onlyVault {
-        _vaultOnly = enabled;
-    }
-
-    function initVault(address _vault) external onlyVault {
-        require(_init);
-        vault = _vault;
-        pendingVault = _vault;
-        isMinter[_vault] = true;
-        minters.push(_vault);
-        delayVault = block.timestamp;
-        _init = false;
-    }
-
-    function setMinter(address _auth) external onlyVault {
-        pendingMinter = _auth;
-        delayMinter = block.timestamp + delay;
-    }
-
-    function setVault(address _vault) external onlyVault {
-        pendingVault = _vault;
-        delayVault = block.timestamp + delay;
-    }
-
-    function applyVault() external onlyVault {
-        require(block.timestamp >= delayVault);
-        vault = pendingVault;
-    }
-
-    function applyMinter() external onlyVault {
-        require(block.timestamp >= delayMinter);
-        isMinter[pendingMinter] = true;
-        minters.push(pendingMinter);
-    }
-
-    // No time delay revoke minter emergency function
-    function revokeMinter(address _auth) external onlyVault {
-        isMinter[_auth] = false;
-    }
-
-    function getAllMinters() external view returns (address[] memory) {
-        return minters;
-    }
-
-
-    function changeVault(address newVault) external onlyVault returns (bool) {
-        require(newVault != address(0), "AnyswapV3ERC20: address(0x0)");
-        pendingVault = newVault;
-        delayVault = block.timestamp + delay;
-        emit LogChangeVault(vault, pendingVault, delayVault);
-        return true;
-    }
-
-    function changeMPCOwner(address newVault) public onlyVault returns (bool) {
-        require(newVault != address(0), "AnyswapV3ERC20: address(0x0)");
-        pendingVault = newVault;
-        delayVault = block.timestamp + delay;
-        emit LogChangeMPCOwner(vault, pendingVault, delayVault);
-        return true;
-    }
-
-    function permit(address target, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external override {
-        require(block.timestamp <= deadline, "AnyswapV3ERC20: Expired permit");
-
-        bytes32 hashStruct = keccak256(
-            abi.encode(
-                PERMIT_TYPEHASH,
-                target,
-                spender,
-                value,
-                nonces[target]++,
-                deadline));
-
-        require(verifyEIP712(target, hashStruct, v, r, s) || verifyPersonalSign(target, hashStruct, v, r, s));
-
-        // _approve(owner, spender, value);
-        _allowances[target][spender] = value;
-        emit Approval(target, spender, value);
-    }
-
-
     function transfer(address recipient, uint256 amount) public override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
@@ -1131,102 +950,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
     function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
         _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
-        return true;
-    }
-      function transferWithPermit(address target, address to, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external override returns (bool) {
-        require(block.timestamp <= deadline, "AnyswapV3ERC20: Expired permit");
-
-        bytes32 hashStruct = keccak256(
-            abi.encode(
-                TRANSFER_TYPEHASH,
-                target,
-                to,
-                value,
-                nonces[target]++,
-                deadline));
-
-        require(verifyEIP712(target, hashStruct, v, r, s) || verifyPersonalSign(target, hashStruct, v, r, s));
-
-        require(to != address(0) || to != address(this));
-
-        _transfer(target, to , value);
-
-
-        return true;
-    }
-
-    function verifyEIP712(address target, bytes32 hashStruct, uint8 v, bytes32 r, bytes32 s) internal view returns (bool) {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                DOMAIN_SEPARATOR,
-                hashStruct));
-        address signer = ecrecover(hash, v, r, s);
-        return (signer != address(0) && signer == target);
-    }
-    function verifyPersonalSign(address target, bytes32 hashStruct, uint8 v, bytes32 r, bytes32 s) internal view returns (bool) {
-        bytes32 hash = prefixed(hashStruct);
-        address signer = ecrecover(hash, v, r, s);
-        return (signer != address(0) && signer == target);
-    }
-
-    // Builds a prefixed hash to mimic the behavior of eth_sign.
-    function prefixed(bytes32 hash) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", DOMAIN_SEPARATOR, hash));
-    }
-
-     function _mint(address account, uint256 amount) internal {
-         // TODO: implement correct mint functionality
-        require(account != address(0), "ERC20: mint to the zero address");
-         // we mint directly to _rOwned balance.
-        _rOwned[account] = _rOwned[account].add(amount);
-        _rTotal = _rTotal.add(amount);
-        emit Transfer(address(0), account, amount);
-    }
-
-    /**
-     * @dev Destroys `amount` tokens from `account`, reducing the
-     * total supply.
-     *
-     * Emits a {Transfer} event with `to` set to the zero address.
-     *
-     * Requirements
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens.
-     */
-    function _burn(address account, uint256 amount) internal {
-        require(account != address(0), "ERC20: burn from the zero address");
-        // TODO: implement correct burn functionality
-        // we burn directly to _rOwned balance.
-        _rOwned[account] = _rOwned[account].sub(amount);
-        _rTotal = _rTotal.sub(amount);
-        emit Transfer(account, address(0), amount);
-    }
-
-
-     function mint(address to, uint256 amount) external onlyAuth returns (bool) {
-        _mint(to, amount);
-        return true;
-    }
-
-    function burn(address from, uint256 amount) external onlyAuth returns (bool) {
-        require(from != address(0), "AnyswapV3ERC20: address(0x0)");
-        _burn(from, amount);
-        return true;
-    }
-
-    function Swapin(bytes32 txhash, address account, uint256 amount) public onlyAuth returns (bool) {
-        _mint(account, amount);
-        emit LogSwapin(txhash, account, amount);
-        return true;
-    }
-
-    function Swapout(uint256 amount, address bindaddr) public returns (bool) {
-        require(!_vaultOnly, "AnyswapV4ERC20: onlyAuth");
-        require(bindaddr != address(0), "AnyswapV3ERC20: address(0x0)");
-        _burn(msg.sender, amount);
-        emit LogSwapout(msg.sender, bindaddr, amount);
         return true;
     }
 
@@ -1350,6 +1073,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         );
     }
 
+    event SwapAndLiquifyEnabledUpdated(bool _enabled);
     function setSwapAndLiquifyEnabled(bool _enabled) public onlyOwner {
         swapAndLiquifyEnabled = _enabled;
         emit SwapAndLiquifyEnabledUpdated(_enabled);
@@ -1646,6 +1370,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         lotteryOnTransfer(from, to, amount);
     }
 
+    event SwapAndLiquify(uint256 half, uint256 newBalance, uint256 otherHalf);
     function swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
         // split the contract balance into halves
         uint256 half = contractTokenBalance.div(2);
@@ -1838,15 +1563,15 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
     function lottery1of1k(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
-        if (value >= lotteryMinTicketValue && to == donationAddress) {
-            //             if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", donationAddress, value, lottery1of1kLimit);
+        if (value >= lotteryMinTicketValue && to == lotteryPotWalletAddress) {
+            if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
                 lottery1of1kIndex++;
                 lottery1of1kUsers.push(user);
                 userTicketsTs[user] = block.timestamp;
                 emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
-                //                 if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
+                if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
             }
         }
         if (prize > 0 && lottery1of1kIndex >= lottery1of1kLimit) {
@@ -1859,10 +1584,10 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             lottery1of1kWinner = lottery1of1kUsers[_randomNumber];
             emit LotteryTriggerEveryNtx(_randomNumber, lottery1of1kWinner, prize);
             _tokenTransfer(lotteryPotWalletAddress, lottery1of1kWinner, prize, false);
-            //            if(lottery1of1kDebug){
-            //                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
-            //                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
-            //            }
+            if(lottery1of1kDebug){
+                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
+                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
+            }
             lottery1of1kIndex = 0;
             delete lottery1of1kUsers;
         }
@@ -1877,12 +1602,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             // emit LotteryAddToHolder(user, exists);
             if (balance >= lotteryHolderMinBalance && !exists) {
                 ticketsByBalance.pushAddress(user, false);
-                //                if(lotteryHoldersDebug)
-                //                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+                if(lotteryHoldersDebug)
+                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
             } else if (balance < lotteryHolderMinBalance && exists) {
                 ticketsByBalance.removeAddress(user);
-                //                if(lotteryHoldersDebug)
-                //                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+                if(lotteryHoldersDebug)
+                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
             }
         }
     }
@@ -1893,9 +1618,9 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         uint256 holders = ticketsByBalance.size();
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
-        //        if(lotteryHoldersDebug){
-        //            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
-        //        }
+        if(lotteryHoldersDebug){
+            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
+        }
         if (prize > 0 && lotteryHoldersIndex >= lotteryHoldersLimit) {
             uint256 _mod = holders - 1;
             uint256 _randomNumber;
@@ -1905,10 +1630,10 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             address winner = ticketsByBalance.getAddressAtIndex(_randomNumber);
             emit LotteryHolderChooseOne(ticketsByBalance.size(), winner, prize);
             _tokenTransfer(holderAddress, winner, prize, false);
-            //            if(lotteryHoldersDebug){
-            //                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
-            //                console.log("\twinner%s rnd=", winner, _randomNumber);
-            //            }
+            if(lotteryHoldersDebug){
+                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
+                console.log("\twinner%s rnd=", winner, _randomNumber);
+            }
             lotteryHoldersIndex = 0;
         }
     }
