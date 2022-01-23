@@ -782,8 +782,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv9";
-    string private _symbol = "TSTv9";
+    string private _name = "TESTv10";
+    string private _symbol = "TSTv10";
     uint8 public immutable decimals = 9;
 
     // address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -855,6 +855,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
+
+    event LotteryHolderChooseOne(uint256 tickets, address winner, uint256 prize);
 
     modifier lockTheSwap {
         inSwapAndLiquify = true;
@@ -1564,14 +1566,14 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function lottery1of1k(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
         if (value >= lotteryMinTicketValue && to == lotteryPotWalletAddress) {
-            if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
+            //if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
                 lottery1of1kIndex++;
                 lottery1of1kUsers.push(user);
                 userTicketsTs[user] = block.timestamp;
                 emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
-                if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
+                //if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
             }
         }
         if (prize > 0 && lottery1of1kIndex >= lottery1of1kLimit) {
@@ -1584,10 +1586,10 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             lottery1of1kWinner = lottery1of1kUsers[_randomNumber];
             emit LotteryTriggerEveryNtx(_randomNumber, lottery1of1kWinner, prize);
             _tokenTransfer(lotteryPotWalletAddress, lottery1of1kWinner, prize, false);
-            if(lottery1of1kDebug){
-                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
-                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
-            }
+//            if(lottery1of1kDebug){
+//                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
+//                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
+//            }
             lottery1of1kIndex = 0;
             delete lottery1of1kUsers;
         }
@@ -1602,38 +1604,38 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             // emit LotteryAddToHolder(user, exists);
             if (balance >= lotteryHolderMinBalance && !exists) {
                 ticketsByBalance.pushAddress(user, false);
-                if(lotteryHoldersDebug)
-                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+//                if(lotteryHoldersDebug)
+//                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
             } else if (balance < lotteryHolderMinBalance && exists) {
                 ticketsByBalance.removeAddress(user);
-                if(lotteryHoldersDebug)
-                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+//                if(lotteryHoldersDebug)
+//                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
             }
         }
     }
-    event LotteryHolderChooseOne(uint256 tickets, address winner, uint256 prize);
+
     function lotteryHolders(address user, address to) internal {
         lotteryHoldersIndex++;
         uint256 prize = getPrizeForHolders();
         uint256 holders = ticketsByBalance.size();
         addUserToBalanceLottery(user);
         addUserToBalanceLottery(to);
-        if(lotteryHoldersDebug){
-            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
-        }
+//        if(lotteryHoldersDebug){
+//            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
+//        }
         if (prize > 0 && lotteryHoldersIndex >= lotteryHoldersLimit) {
             uint256 _mod = holders - 1;
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-            address winner = ticketsByBalance.getAddressAtIndex(_randomNumber);
-            emit LotteryHolderChooseOne(ticketsByBalance.size(), winner, prize);
-            _tokenTransfer(holderAddress, winner, prize, false);
-            if(lotteryHoldersDebug){
-                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
-                console.log("\twinner%s rnd=", winner, _randomNumber);
-            }
+            lotteryHoldersWinner = ticketsByBalance.getAddressAtIndex(_randomNumber);
+            emit LotteryHolderChooseOne(ticketsByBalance.size(), lotteryHoldersWinner, prize);
+            _tokenTransfer(holderAddress, lotteryHoldersWinner, prize, false);
+//            if(lotteryHoldersDebug){
+//                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
+//                console.log("\tlotteryHoldersWinner=%s rnd=", lotteryHoldersWinner, _randomNumber);
+//            }
             lotteryHoldersIndex = 0;
         }
     }
