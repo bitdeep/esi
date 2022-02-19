@@ -32,6 +32,10 @@ const config: HardhatUserConfig = {
     localhost: {
       url: 'http://localhost:8545',
     },
+    testnet: {
+      url: `https://speedy-nodes-nyc.moralis.io/${process.env.MORALIS}/bsc/testnet`,
+      accounts: [`${process.env.PRIVATE_KEY}`]
+    },
   },
   paths: {
     sources: 'contracts',
@@ -39,6 +43,9 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 0,
   },
+  etherscan: {
+    apiKey: `${process.env.API_KEY}`
+  }
 };
 
 export default config;

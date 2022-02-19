@@ -23,6 +23,12 @@ function fromWei(v: string): string {
     return utils.formatUnits(v, 9).toString();
 }
 
+function now(x: number) {
+    let t = new Date().getTime() / 1000;
+    t += x;
+    return parseInt(t.toString());
+}
+
 describe("Token contract", () => {
     let weth: any, factory: any, router: any, token: any;
     let s_reserve: any;
@@ -54,11 +60,86 @@ describe("Token contract", () => {
         weth = await _WSDN.deploy();
         factory = await _UniswapV2Factory.deploy();
         router = await _UniswapV2Router02.deploy();
+        const pairCodeHash = await factory.pairCodeHash();
+        // console.log('pairCodeHash', pairCodeHash);
         await router.init(factory.address, weth.address);
         token = await _Token.deploy(dev, router.address);
 
 
     });
+
+    describe("Swap", () => {
+        it("Add liquidity and swap both sides", async () => {
+            let _1: string = toWei('1');
+            let _50: string = toWei('50');
+            let _1T: string = toWei('1000000000000');
+            let _1M: string = toWei('1000000');
+            await token.approve(router.address, '9999999999999999999999999999999999999999');
+            await token.connect(USER).approve(router.address, '9999999999999999999999999999999999999999');
+            await router.addLiquidityETH(token.address, _1T, 0, 0, dev, now(100), {value: _50});
+
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+                (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+                ((await token.balanceOf(user)).toString(), 0, [token.address, weth.address], user, now(100), {from: user});
+        });
+
+        it("Do 10 buy and 10 sell", async () => {
+            let _1: string = toWei('1');
+            let _50: string = toWei('50');
+            let _1T: string = toWei('1000000000000');
+            let _1M: string = toWei('1000000');
+            await token.approve(router.address, '9999999999999999999999999999999999999999');
+            await token.connect(USER).approve(router.address, '9999999999999999999999999999999999999999');
+            await router.addLiquidityETH(token.address, _1T, 0, 0, dev, now(100), {value: _50});
+
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
+            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
+            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+
+        });
+
+    });
+
     describe("Transfers", () => {
         it("Do 10 transfers of 100 each", async () => {
             await token.transfer(user, MINTED);

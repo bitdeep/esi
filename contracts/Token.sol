@@ -6,7 +6,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -824,7 +824,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address public immutable uniswapV2Pair;
 
     bool inSwapAndLiquify;
-    bool public swapAndLiquifyEnabled = false;
+    bool public swapAndLiquifyEnabled = true;
     uint256 public _creationTime = now;
     uint256 public _maxTxAmount = 5_000_000 * 10 ** 6 * 10 ** 9;
     uint256 private numTokensSellToAddToLiquidity = 500_000 * 10 ** 6 * 10 ** 9;
@@ -833,7 +833,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
 
     // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue = 1_000_000_000;
+    uint256 public lotteryMinTicketValue = 1_000_000_000;//_000_000_000_000;
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
@@ -851,7 +851,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 public lotteryHoldersLimit = 3;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
-    uint256 public lotteryHolderMinBalance = 100_000_000_000; // 100
+    uint256 public lotteryHolderMinBalance = 1_000_000_000;//_000_000_000_000; // 100
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
@@ -1334,7 +1334,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         if (whitelist[from] || whitelist[to]) {
             emit WhiteListTransfer(from, to, amount);
         } else {
-            _antiAbuse(from, to, amount);
+            // _antiAbuse(from, to, amount);
             // is the token balance of this contract address over the min number of
             // tokens that we need to initiate a swap + liquidity lock?
             // also, don't get caught in a circular liquidity event.
@@ -1598,7 +1598,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     // add and remove users according to their balance from holder lottery
     //event LotteryAddToHolder(address from, bool status);
     function addUserToBalanceLottery(address user) internal {
-        if (!_isExcludedFromFee[user] && !_isExcluded[user]) {
+        if (!_isExcludedFromFee[user] && !_isExcluded[user]
+        && user != address(uniswapV2Router) && user != uniswapV2Pair) {
             uint256 balance = balanceOf(user);
             bool exists = ticketsByBalance.exists(user);
             // emit LotteryAddToHolder(user, exists);
@@ -1616,20 +1617,26 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
     function lotteryHolders(address user, address to) internal {
         lotteryHoldersIndex++;
+
         uint256 prize = getPrizeForHolders();
-        uint256 holders = ticketsByBalance.size();
-        addUserToBalanceLottery(user);
-        addUserToBalanceLottery(to);
+        if( user != address(uniswapV2Router) && user != uniswapV2Pair
+           && to != address(uniswapV2Router) && user != uniswapV2Pair ){
+            addUserToBalanceLottery(user);
+            addUserToBalanceLottery(to);
+        }
+
 //        if(lotteryHoldersDebug){
 //            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
 //        }
-        if (prize > 0 && lotteryHoldersIndex >= lotteryHoldersLimit) {
-            uint256 _mod = holders - 1;
+
+        if (prize > 0 && lotteryHoldersIndex >= lotteryHoldersLimit && ticketsByBalance.size() > 0 ) {
+            uint256 _mod = ticketsByBalance.size() - 1;
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft()));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-            lotteryHoldersWinner = ticketsByBalance.getAddressAtIndex(_randomNumber);
+            lotteryHoldersWinner = ticketsByBalance._items[_randomNumber];
+            // console.log("%s %s %s", lotteryHoldersWinner, _randomNumber, ticketsByBalance.size());
             emit LotteryHolderChooseOne(ticketsByBalance.size(), lotteryHoldersWinner, prize);
             _tokenTransfer(holderAddress, lotteryHoldersWinner, prize, false);
 //            if(lotteryHoldersDebug){
