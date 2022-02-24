@@ -1288,11 +1288,20 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
 
 
-    function _antiAbuse(address from, address to, uint256 amount) private view {
+    function _antiAbuse(address from, address to, uint256 amount,
+        bool isBuy, bool isSell) private view {
+
+        if( isBuy ){
+            // we don't do anti abuse on token buy
+            return;
+        }
 
         if (from == owner() || to == owner())
         //  if owner we just return or we can't add liquidity
             return;
+
+//        console.log("from=%s to=%s", from, to);
+//        console.log("isBuy=%s isSell=%s", isBuy, isSell);
 
         require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
 
@@ -1334,7 +1343,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         if (whitelist[from] || whitelist[to]) {
             emit WhiteListTransfer(from, to, amount);
         } else {
-            // _antiAbuse(from, to, amount);
+
+            bool isBuy = from == uniswapV2Pair || from == address(uniswapV2Router);
+            bool isSell = to == uniswapV2Pair || to == address(uniswapV2Router);
+
+            _antiAbuse(from, to, amount, isBuy, isSell);
+
             // is the token balance of this contract address over the min number of
             // tokens that we need to initiate a swap + liquidity lock?
             // also, don't get caught in a circular liquidity event.
