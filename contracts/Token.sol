@@ -782,8 +782,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv10";
-    string private _symbol = "TSTv10";
+    string private _name = "TESTv15";
+    string private _symbol = "TSTv15";
     uint8 public immutable decimals = 9;
 
     // address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
