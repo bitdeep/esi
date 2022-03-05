@@ -1,10 +1,16 @@
 mainnet pcs router v2 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
 testnet pcs router v2 0x1Ed675D5e63314B760162A3D1Cae1803DCFC87C7
+testnet pcs router v2 0x9ac64cc6e4415144c455bd8e4837fea55603e5c3 
+ (https://pancake.kiemtienonline360.com/#/swap)
 
-testnet token 0x3074cf20ECD1Cfe96b3Ee43968d0c426f775171a
+wbnb 0xae13d989dac2f0debff460ac112a837c89baa7cd
 
-mainet token 
+TSTv15 0xe2651aC1A3752F52eb56608acc2d8010aFdeF1eB
+TSTv16 0x42acf33d14FAa3410fD6b18050DDEa0A25047507
+3214215108310000000000 1961879622
+
+["0xe2651aC1A3752F52eb56608acc2d8010aFdeF1eB","0xae13d989dac2f0debff460ac112a837c89baa7cd"]
 
 ---
 

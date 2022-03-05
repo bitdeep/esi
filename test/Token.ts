@@ -1,10 +1,12 @@
 import {formatUnits, parseUnits} from "@ethersproject/units/src.ts/index";
 
+const crypto = require('crypto')
 const {ethers} = require("hardhat");
 const {solidity} = require("ethereum-waffle");
 const {expect} = require("chai");
 require("@nomiclabs/hardhat-web3");
 import {ContractFactory, constants, utils, Contract, BigNumber} from 'ethers';
+
 
 const chalk = require('chalk');
 // let _yellowBright = chalk.yellowBright;
@@ -72,6 +74,34 @@ describe("Token contract", () => {
 
 
     });
+/*
+    describe("Mass Tests", () => {
+
+        it("Do 1000 tranfers", async () => {
+            const users = await ethers.getSigners();
+            console.log('users', users.length)
+            const balanceOfDev = (await token.balanceOf(dev)).toString();
+            const lotteryMinTicketValue = (await token.lotteryMinTicketValue()).toString();
+            const lotteryHolderMinBalance = (await token.lotteryHolderMinBalance()).toString();
+            console.log('balanceOfDev           ', balanceOfDev);
+            console.log('lotteryMinTicketValue  ', lotteryMinTicketValue);
+            console.log('lotteryHolderMinBalance', lotteryHolderMinBalance);
+            console.log(dev);
+
+            await token.transfer(user, balanceOfDev)
+
+            for (let i = 0; i < 1000; i++) {
+                const privateKey = "0x" + crypto.randomBytes(32).toString('hex');
+                const wallet = new ethers.Wallet(privateKey);
+                const addr = wallet.address;
+                console.log(`${i} ${addr}`);
+                await token.connect(USER).transfer(addr, lotteryMinTicketValue)
+                await token.connect(USER).transfer(addr, lotteryHolderMinBalance)
+            }
+        });
+
+    });
+*/
 
     describe("Swap", () => {
 
@@ -79,65 +109,65 @@ describe("Token contract", () => {
 
             await token.approve(router.address, '9999999999999999999999999999999999999999');
             await token.connect(USER).approve(router.address, '9999999999999999999999999999999999999999');
-            await router.addLiquidityETH(token.address, _1T, 0, 0, dev, now(100), {value: _50});
+            await router.addLiquidityETH(token.address, _1T, 0, 0, dev, 9646498066, {value: _50});
 
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
 
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            ((await token.balanceOf(user)).toString(), 0, [token.address, weth.address], user, now(100), {from: user});
+            ((await token.balanceOf(user)).toString(), 0, [token.address, weth.address], user, 9646498066, {from: user});
         });
 
         it("Do 10 buy", async () => {
 
             await token.approve(router.address, '9999999999999999999999999999999999999999');
             await token.connect(USER).approve(router.address, '9999999999999999999999999999999999999999');
-            await router.addLiquidityETH(token.address, _1T, 0, 0, dev, now(100), {value: _50});
+            await router.addLiquidityETH(token.address, _1T, 0, 0, dev, 9646498066, {value: _50});
 
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
 
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
             await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-            (0, [weth.address, token.address], user, now(100), {from: user, value: _1});
+            (0, [weth.address, token.address], user, 9646498066, {from: user, value: _1});
 
 
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
 
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
             await router.connect(USER).swapExactTokensForETHSupportingFeeOnTransferTokens
-            (_1M, 0, [token.address, weth.address], user, now(100), {from: user});
+            (_1M, 0, [token.address, weth.address], user, 9646498066, {from: user});
 
 
         });
@@ -253,7 +283,7 @@ describe("Token contract", () => {
 
             // mininum transfer amount to get a transfer ticket: 1 (1_000_000_000) token
             const lotteryMinTicketValue = await token.lotteryMinTicketValue();
-            expect(fromWei(lotteryMinTicketValue)).to.be.equal('1.0');
+            expect(fromWei(lotteryMinTicketValue)).to.be.equal('1000000000.0');
 
             // should not get a ticket, bellow limit.
             await token.transfer(user, toWei('0.1'));
@@ -261,7 +291,7 @@ describe("Token contract", () => {
             expect(lotteryTotalTicket).to.be.equal('0'); // 0 = dead address
 
             // should get a ticket, above min limit and to donation
-            await token.transfer(lotteryPotWalletAddress, toWei('1.1'));
+            await token.transfer(lotteryPotWalletAddress, toWei('1000000000.1'));
 
             lotteryTotalTicket = (await token.lotteryTotalTicket()).toString();
             // we should have 1 valid user ticket
@@ -276,55 +306,62 @@ describe("Token contract", () => {
 
             // enable holder lottery
             await token.setLottery1of1kEnabled(true);
-            await token.setLottery1of1kDebug(false);
+            await token.setLottery1of1kDebug(true);
+            await token.setDisableTicketsTs(false);
+            await token.setLottery1of1kLimit(3);
+            await token.setLottery1of1kMinLimit(3);
 
             // the donation address, if we transfer to this address, we get a ticket
+            const lotteryMinTicketValue = (await token.lotteryMinTicketValue()).toString();
             const lotteryPotWalletAddress = await token.lotteryPotWalletAddress();
 
             // populate users wallets:
-            await token.transfer(user, toWei('100'));
-            await token.transfer(user1, toWei('100'));
-            await token.transfer(user2, toWei('100'));
-            await token.transfer(user3, toWei('100'));
+            await token.transfer(user, lotteryMinTicketValue);
+            await token.transfer(user1, lotteryMinTicketValue);
+            await token.transfer(user2, lotteryMinTicketValue);
+            await token.transfer(user3, lotteryMinTicketValue);
 
             // should get a ticket, above min limit and to donation
 
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER1).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER2).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER3).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
 
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER1).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER2).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER3).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
             // lottery should be triggered at anytime above
             const lottery1of1kWinner = await token.lottery1of1kWinner();
             expect(lottery1of1kWinner).not.to.be.equal('0x0000000000000000000000000000000000000000');
 
             // populate users wallets:
-            await token.transfer(user, toWei('10'));
-            await token.transfer(user1, toWei('10'));
-            await token.transfer(user2, toWei('10'));
-            await token.transfer(user3, toWei('10'));
+            await token.transfer(user, lotteryMinTicketValue);
+            await token.transfer(user1, lotteryMinTicketValue);
+            await token.transfer(user2, lotteryMinTicketValue);
+            await token.transfer(user3, lotteryMinTicketValue);
 
             // should get a ticket, above min limit and to donation
 
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER1).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER2).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.connect(USER3).transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
-            await token.transfer(lotteryPotWalletAddress, toWei('1'));
+
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER1).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER2).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.connect(USER3).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
 
 
         });
+
 
         it("lotteryHolders", async () => {
 

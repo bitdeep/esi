@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "truffle migrate --network dev --f 2 --to 2",
-    "testnet": "truffle migrate --network testnet --f 2 --to 2",
-    "testnet-nft": "truffle migrate --network testnet --f 3 --to 3",
-    "mainnet": "truffle migrate --network mainnet --f 2 --to 2",
+    "deploy": "hardhat run scripts/testnet.js --network testnet",
     "test": "npx hardhat test",
-    "test-truffle": "truffle compile --all && truffle test test/token.js --network dev --show-events --stacktrace --bail",
     "live": "nodemon --exec yarn test -e sol,js,ts"
   },
   "devDependencies": {
@@ -41,7 +37,7 @@
     "hardhat-contract-sizer": "^2.1.1",
     "hardhat-deploy": "^0.9.8",
     "hardhat-deploy-ethers": "^0.3.0-beta.11",
-    "hardhat-gas-reporter": "^1.0.4",
+    "hardhat-gas-reporter": "^1.0.8",
     "hardhat-spdx-license-identifier": "^2.0.3",
     "numeral": "^2.0.6",
     "ts-node": "^10.4.0",

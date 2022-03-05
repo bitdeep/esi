@@ -6,7 +6,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -782,8 +782,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv15";
-    string private _symbol = "TSTv15";
+    string private _name = "TESTv16";
+    string private _symbol = "TSTv16";
     uint8 public immutable decimals = 9;
 
     // address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -833,7 +833,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
 
     // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue = 1_000_000_000;//_000_000_000_000;
+    uint256 public lotteryMinTicketValue = 1_000_000_000_000_000_000;
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
@@ -843,15 +843,15 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address[] private lottery1of1kUsers; // list of tickets for 1000 tx prize
     uint256 public lottery1of1kIndex; // index of last winner
     address public lottery1of1kWinner; // last random winner
-    uint256 public lottery1of1kLimit = 3; // TODO: CHANGE THIS TO 1000
-    uint256 public lottery1of1kMinLimit = 3;
+    uint256 public lottery1of1kLimit = 1000;
+    uint256 public lottery1of1kMinLimit = 1000;
 
     bool public lotteryHoldersEnabled = true;
     bool public lotteryHoldersDebug = false;
-    uint256 public lotteryHoldersLimit = 3;
+    uint256 public lotteryHoldersLimit = 100;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
-    uint256 public lotteryHolderMinBalance = 1_000_000_000;//_000_000_000_000; // 100
+    uint256 public lotteryHolderMinBalance = 1_000_000_000_000_000_000; // 100
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
@@ -1568,6 +1568,9 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function setLottery1of1kLimit(uint256 val) public onlyOwner {
         lottery1of1kLimit = val;
     }
+    function setLottery1of1kMinLimit(uint256 val) public onlyOwner {
+        lottery1of1kMinLimit = val;
+    }
     function setLottery1of1kEnabled(bool val) public onlyOwner {
         lottery1of1kEnabled = val;
     }
@@ -1579,20 +1582,26 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
     function lottery1of1k(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
+
         if (value >= lotteryMinTicketValue && to == lotteryPotWalletAddress) {
-            //if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
+            // if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
                 lottery1of1kIndex++;
                 lottery1of1kUsers.push(user);
                 userTicketsTs[user] = block.timestamp;
                 emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
-                //if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
+                // if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
             }
         }
+
+        // console.log("prize=%d index=%d limit =%d", prize, lottery1of1kIndex, lottery1of1kLimit);
         if (prize > 0 && lottery1of1kIndex >= lottery1of1kLimit) {
             uint256 _mod = lottery1of1kUsers.length;
-            if (lottery1of1kUsers.length < lottery1of1kMinLimit) return;
+            // console.log("\tlength=%d limist=%d", lottery1of1kUsers.length, lottery1of1kMinLimit);
+            if (lottery1of1kUsers.length < lottery1of1kMinLimit){
+                return;
+            }
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft(), prize));
             _randomNumber = uint256(_structHash);
