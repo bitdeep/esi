@@ -1096,23 +1096,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _rOwned[lotteryPotWalletAddress] = _rOwned[lotteryPotWalletAddress].add(rr.rLotteryPotFee);
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
 
-        if (tt.tHolderFee > 0)
-            emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
-
-        if (tt.tCharityFee > 0)
-            emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
-
-        if (tt.tDevFundFee > 0)
-            emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
-
-        if (tt.tMarketingFundFee > 0)
-            emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
-
-        if (tt.tLotteryPotFee > 0)
-            emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
-
-        if (tt.tBurn > 0)
-            emit Transfer(msg.sender, burnAddress, tt.tBurn);
+        emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
+        emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
+        emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
+        emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
+        emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
+        emit Transfer(msg.sender, burnAddress, tt.tBurn);
 
     }
 
@@ -1289,11 +1278,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function _antiAbuse(address from, address to, uint256 amount,
         bool isBuy, bool isSell) private view {
 
-        if( isSell ){
-            // we don't do anti abuse on token sells
-            return;
-        }
-
         if (from == owner() || to == owner())
         //  if owner we just return or we can't add liquidity
             return;
@@ -1345,7 +1329,9 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             bool isBuy = from == uniswapV2Pair || from == address(uniswapV2Router);
             bool isSell = to == uniswapV2Pair || to == address(uniswapV2Router);
 
-            _antiAbuse(from, to, amount, isBuy, isSell);
+            if( isBuy ){
+                _antiAbuse(from, to, amount, isBuy, isSell);
+            }
 
             // is the token balance of this contract address over the min number of
             // tokens that we need to initiate a swap + liquidity lock?
