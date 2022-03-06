@@ -1291,8 +1291,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function _antiAbuse(address from, address to, uint256 amount,
         bool isBuy, bool isSell) private view {
 
-        if( isBuy ){
-            // we don't do anti abuse on token buy
+        if( isSell ){
+            // we don't do anti abuse on token sells
             return;
         }
 
