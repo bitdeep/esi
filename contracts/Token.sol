@@ -6,7 +6,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -782,8 +782,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv16";
-    string private _symbol = "TSTv16";
+    string private _name = "TESTv17";
+    string private _symbol = "TSTv17";
     uint8 public immutable decimals = 9;
 
     // address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -833,25 +833,25 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
 
     // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue = 1_000_000_000_000_000_000;
+    uint256 public lotteryMinTicketValue = 1_000_000_000;
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
-    bool public lottery1of1kDebug = false; // disable on testing env only
+    bool public lottery1of1kDebug = true; // disable on testing env only
 
     bool public lottery1of1kEnabled = true;
     address[] private lottery1of1kUsers; // list of tickets for 1000 tx prize
     uint256 public lottery1of1kIndex; // index of last winner
     address public lottery1of1kWinner; // last random winner
-    uint256 public lottery1of1kLimit = 1000;
-    uint256 public lottery1of1kMinLimit = 1000;
+    uint256 public lottery1of1kLimit = 3;
+    uint256 public lottery1of1kMinLimit = 3;
 
     bool public lotteryHoldersEnabled = true;
-    bool public lotteryHoldersDebug = false;
-    uint256 public lotteryHoldersLimit = 100;
+    bool public lotteryHoldersDebug = true;
+    uint256 public lotteryHoldersLimit = 3;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
-    uint256 public lotteryHolderMinBalance = 1_000_000_000_000_000_000; // 100
+    uint256 public lotteryHolderMinBalance = 1_000_000_000; // 100
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
@@ -1513,10 +1513,13 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function setLotteryHolderMinBalance(uint256 val) public onlyOwner {
         lotteryHolderMinBalance = val;
     }
+    function setLotteryMinTicketValue(uint256 val) public onlyOwner {
+        lotteryMinTicketValue = val;
+    }
     function setLotteryHoldersEnabled(bool val) public onlyOwner {
         lotteryHoldersEnabled = val;
     }
-    function loterryUserTickets(address _user) public view returns (uint256[] memory){
+    function lotteryUserTickets(address _user) public view returns (uint256[] memory){
         uint[] memory my = new uint256[](lottery1of1kUsers.length);
         uint count;
         for (uint256 i = 0; i < lottery1of1kUsers.length; i++) {
@@ -1605,19 +1608,18 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     // add and remove users according to their balance from holder lottery
     //event LotteryAddToHolder(address from, bool status);
     function addUserToBalanceLottery(address user) internal {
-        if (!_isExcludedFromFee[user] && !_isExcluded[user]
-        && user != address(uniswapV2Router) && user != uniswapV2Pair) {
+        if (!_isExcludedFromFee[user] && !_isExcluded[user] ){
             uint256 balance = balanceOf(user);
             bool exists = ticketsByBalance.exists(user);
             // emit LotteryAddToHolder(user, exists);
             if (balance >= lotteryHolderMinBalance && !exists) {
                 ticketsByBalance.pushAddress(user, false);
 //                if(lotteryHoldersDebug)
-//                    console.log("ADD HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+//                    console.log("\t\tADD %s HOLDERS=%d PRIZE=%d", user, ticketsByBalance.size(), getPrizeForHolders()/1e9);
             } else if (balance < lotteryHolderMinBalance && exists) {
                 ticketsByBalance.removeAddress(user);
 //                if(lotteryHoldersDebug)
-//                    console.log("REMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders());
+//                    console.log("\t\tREMOVE HOLDERS=%d PRIZE=%d", ticketsByBalance.size(), getPrizeForHolders()/1e9);
             }
         }
     }
@@ -1626,14 +1628,17 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         lotteryHoldersIndex++;
 
         uint256 prize = getPrizeForHolders();
-        if( user != address(uniswapV2Router) && user != uniswapV2Pair
-           && to != address(uniswapV2Router) && user != uniswapV2Pair ){
+
+        if( user != address(uniswapV2Router) && user != uniswapV2Pair ){
             addUserToBalanceLottery(user);
+        }
+
+        if( to != address(uniswapV2Router) && to != uniswapV2Pair ){
             addUserToBalanceLottery(to);
         }
 
 //        if(lotteryHoldersDebug){
-//            console.log("\tHOLDERS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize, lotteryHoldersIndex );
+//            console.log("\tTICKETS=%d PRIZE=%d, INDEX=%d", ticketsByBalance.size(), prize/1e9, lotteryHoldersIndex );
 //        }
 
         if (prize > 0 && lotteryHoldersIndex >= lotteryHoldersLimit && ticketsByBalance.size() > 0 ) {
@@ -1647,8 +1652,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             emit LotteryHolderChooseOne(ticketsByBalance.size(), lotteryHoldersWinner, prize);
             _tokenTransfer(holderAddress, lotteryHoldersWinner, prize, false);
 //            if(lotteryHoldersDebug){
-//                console.log("\tprize=%d index=%d", prize, lotteryHoldersIndex);
-//                console.log("\tlotteryHoldersWinner=%s rnd=", lotteryHoldersWinner, _randomNumber);
+//                console.log("\t\tPRIZE=%d index=%d", prize/1e9, lotteryHoldersIndex);
+//                console.log("\t\tlotteryHoldersWinner=%s rnd=", lotteryHoldersWinner, _randomNumber);
 //            }
             lotteryHoldersIndex = 0;
         }

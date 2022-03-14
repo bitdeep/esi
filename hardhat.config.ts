@@ -4,7 +4,7 @@ import 'dotenv/config';
 import {HardhatUserConfig} from 'hardhat/types';
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
-import 'hardhat-gas-reporter';
+// import 'hardhat-gas-reporter';
 // import 'hardhat-spdx-license-identifier';
 // import 'hardhat-contract-sizer';
 // import '@nomiclabs/hardhat-etherscan';
@@ -42,20 +42,16 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 0,
-    /*
-    reporter: 'eth-gas-reporter',
-    reporterOptions : {
-      url: 'http://127.0.0.1:8545/'
-    }
-
-     */
   },
   etherscan: {
     apiKey: `${process.env.API_KEY}`
   },
+  /*
   gasReporter: {
     enabled: true
   }
+
+   */
 };
 
 export default config;
