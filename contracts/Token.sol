@@ -795,7 +795,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
     address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
     address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
-    address public faaSWalletAddress = 0x0000000000000000000000000000000000000001;
+    address public faaSWalletAddress = 0xC68D047E602cCED677F71Ed4D2b8E5E9Cf4D74E6;
 
     uint256 public _FaaSFee = 10; //1%
     uint256 private _previous_FaaSFee = _FaaSFee;
