@@ -185,14 +185,16 @@ describe("Mass Tests", () => {
 
     describe("Transfers", () => {
         it("Do 10 transfers of 100 each", async () => {
+            // 1+1+2+1+1+0.5+1+0.5+1
             await token.transfer(user, MINTED);
             await token.connect(USER).transfer(user1, CEM);
+            const bal = (await token.balanceOf(user1)).toString();
+
             await token.connect(USER).transfer(user1, CEM);
             await token.connect(USER).transfer(user1, CEM);
             await token.connect(USER).transfer(user1, CEM);
             // 4 transfer of 100 each, user must receive 91 each total of 364 (91*4=364)
             expect(fromWei(await token.balanceOf(user1))).to.be.equal('364.0');
-
 
             await token.connect(USER).transfer(user2, CEM);
             await token.connect(USER).transfer(user2, CEM);
@@ -244,6 +246,7 @@ describe("Mass Tests", () => {
             const devFundWalletAddress: string = await token.devFundWalletAddress();
             const marketingFundWalletAddress: string = await token.marketingFundWalletAddress();
             const lotteryPotWalletAddress: string = await token.lotteryPotWalletAddress();
+            const faaSWalletAddress: string = await token.faaSWalletAddress();
 
             const balanceOf_dev = await token.balanceOf(dev);
             const balanceOf_holderAddress = await token.balanceOf(holderAddress);
@@ -252,11 +255,13 @@ describe("Mass Tests", () => {
             const balanceOf_devFundWalletAddress = await token.balanceOf(devFundWalletAddress);
             const balanceOf_marketingFundWalletAddress = await token.balanceOf(marketingFundWalletAddress);
             const balanceOf_lotteryPotWalletAddress = await token.balanceOf(lotteryPotWalletAddress);
+            const balanceOf_faaSWalletAddress = await token.balanceOf(faaSWalletAddress);
 
             // should be 999999999999900.999999999 because we transferred only 100
             expect(fromWei(balanceOf_dev)).to.be.equal('999999999999900.999999999');
 
-            // should be 0 because we are no transferring to donation
+            expect(fromWei(balanceOf_faaSWalletAddress)).to.be.equal('1.0');
+
             expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
 
             // holder wallet should get 0.5% on each transfer
@@ -272,7 +277,7 @@ describe("Mass Tests", () => {
             expect(fromWei(balanceOf_devFundWalletAddress)).to.be.equal('1.0');
 
             // market wallet should get 2% on each transfer
-            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('2.0');
+            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('1.0');
 
             // lottery wallet should get 0.5% on each transfer
             expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
@@ -289,7 +294,7 @@ describe("Mass Tests", () => {
             await token.setLottery1of1kEnabled(true);
 
             // the donation address, if we transfer to this address, we get a ticket
-            const lotteryPotWalletAddress = await token.lotteryPotWalletAddress();
+            const donationAddress = await token.donationAddress();
 
             // mininum transfer amount to get a transfer ticket: 1 (1_000_000_000) token
             const lotteryMinTicketValue = await token.lotteryMinTicketValue();
@@ -301,7 +306,7 @@ describe("Mass Tests", () => {
             expect(lotteryTotalTicket).to.be.equal('0'); // 0 = dead address
 
             // should get a ticket, above min limit and to donation
-            await token.transfer(lotteryPotWalletAddress, toWei('1.1'));
+            await token.transfer(donationAddress, toWei('1.1'));
 
             lotteryTotalTicket = (await token.lotteryTotalTicket()).toString();
             // we should have 1 valid user ticket
@@ -323,7 +328,7 @@ describe("Mass Tests", () => {
 
             // the donation address, if we transfer to this address, we get a ticket
             const lotteryMinTicketValue = (await token.lotteryMinTicketValue()).toString();
-            const lotteryPotWalletAddress = await token.lotteryPotWalletAddress();
+            const donationAddress = await token.donationAddress();
 
             // populate users wallets:
             await token.transfer(user, lotteryMinTicketValue);
@@ -334,17 +339,17 @@ describe("Mass Tests", () => {
             // should get a ticket, above min limit and to donation
 
 
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER1).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER2).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER3).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER).transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER1).transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER2).transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER3).transfer(donationAddress, lotteryMinTicketValue);
 
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
             // lottery should be triggered at anytime above
             const lottery1of1kWinner = await token.lottery1of1kWinner();
             expect(lottery1of1kWinner).not.to.be.equal('0x0000000000000000000000000000000000000000');
@@ -358,16 +363,16 @@ describe("Mass Tests", () => {
             // should get a ticket, above min limit and to donation
 
 
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER1).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER2).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.connect(USER3).transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
-            await token.transfer(lotteryPotWalletAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER).transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER1).transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER2).transfer(donationAddress, lotteryMinTicketValue);
+            await token.connect(USER3).transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
+            await token.transfer(donationAddress, lotteryMinTicketValue);
 
 
         });

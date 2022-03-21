@@ -6,7 +6,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -786,7 +786,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     string private _symbol = "TSTv20";
     uint8 public immutable decimals = 9;
 
-    // address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
+    address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
     address public holderAddress = 0x05aA6575142d44a4a7E0EA40314065C4fE9e6a57;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     address public charityWalletAddress = 0x2a80B9b0A833979f50c889Cb30c681E4E5b1899c;
@@ -795,6 +795,10 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
     address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
     address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
+    address public faaSWalletAddress = 0x0000000000000000000000000000000000000001;
+
+    uint256 public _FaaSFee = 10; //1%
+    uint256 private _previous_FaaSFee = _FaaSFee;
 
     uint256 public _distributionFee = 10; //1%
     uint256 private _previousDistributionFee = _distributionFee;
@@ -805,7 +809,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 public _devFundFee = 10; //1%
     uint256 private _previousDevFundFee = _devFundFee;
 
-    uint256 public _marketingFundFee = 20; //2%
+    uint256 public _marketingFundFee = 10; //1%
     uint256 private _previousMarketingFundFee = _marketingFundFee;
 
     uint256 public _lotteryPotFee = 5; //0.5%
@@ -890,6 +894,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _isExcludedFromFee[holderAddress] = true;
         _isExcludedFromFee[charityWalletAddress] = true;
         _isExcludedFromFee[burnAddress] = true;
+        _isExcludedFromFee[faaSWalletAddress] = true;
         emit Transfer(address(0), mintSupplyTo, _tTotal);
     }
 
@@ -1087,7 +1092,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function _reflectFee(rInfo memory rr, tInfo memory tt) private {
         _rTotal = _rTotal.sub(rr.rDistributionFee);
         _tFeeTotal = _tFeeTotal.add(tt.tDistributionFee).add(tt.tCharityFee).add(tt.tDevFundFee)
-        .add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn).add(tt.tHolderFee);
+        .add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn).add(tt.tHolderFee).add(tt.tFaaSFee);
 
         _rOwned[holderAddress] = _rOwned[holderAddress].add(rr.rHolderFee);
         _rOwned[charityWalletAddress] = _rOwned[charityWalletAddress].add(rr.rCharityFee);
@@ -1095,6 +1100,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _rOwned[marketingFundWalletAddress] = _rOwned[marketingFundWalletAddress].add(rr.rMarketingFundFee);
         _rOwned[lotteryPotWalletAddress] = _rOwned[lotteryPotWalletAddress].add(rr.rLotteryPotFee);
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
+        _rOwned[faaSWalletAddress] = _rOwned[faaSWalletAddress].add(rr.rFaaSFee);
 
         emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
         emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
@@ -1102,6 +1108,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
         emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
         emit Transfer(msg.sender, burnAddress, tt.tBurn);
+        emit Transfer(msg.sender, faaSWalletAddress, tt.tFaaSFee);
 
     }
 
@@ -1115,6 +1122,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         uint256 tLotteryPotFee;
         uint256 tBurn;
         uint256 tHolderFee;
+        uint256 tFaaSFee;
     }
 
     struct rInfo {
@@ -1128,34 +1136,37 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         uint256 rBurn;
         uint256 rLiquidity;
         uint256 rHolderFee;
+        uint256 rFaaSFee;
     }
 
     function _getValues(uint256 tAmount) private view returns (rInfo memory rr, tInfo memory tt) {
         tt = _getTValues(tAmount);
         rr = _getRValues(tAmount, tt.tDistributionFee, tt.tCharityFee, tt.tDevFundFee, tt.tMarketingFundFee,
-            tt.tLotteryPotFee, tt.tBurn, tt.tHolderFee, tt.tLiquidity, _getRate());
+            tt.tLotteryPotFee, tt.tBurn, tt.tHolderFee, tt.tLiquidity, _getRate(), tt.tFaaSFee);
         return (rr, tt);
     }
 
     function _getTValues(uint256 tAmount) private view returns (tInfo memory tt) {
-        tt.tDistributionFee = calculateDistributionFee(tAmount);
-        tt.tCharityFee = calculateCharityFee(tAmount);
-        tt.tDevFundFee = calculateDevFundFee(tAmount);
-        tt.tMarketingFundFee = calculateMarketingFundFee(tAmount);
-        tt.tLotteryPotFee = calculateLotteryPotFee(tAmount);
-        tt.tBurn = calculateBurnFee(tAmount);
-        tt.tHolderFee = calculateHolderFee(tAmount);
-        tt.tLiquidity = calculateLiquidityFee(tAmount);
-        uint totalFee = tt.tDistributionFee.add(tt.tCharityFee).add(tt.tDevFundFee);
-        totalFee = totalFee.add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn);
-        totalFee = totalFee.add(tt.tLiquidity).add(tt.tHolderFee);
+        tt.tFaaSFee = calculateFaaSFee(tAmount);                    // _FaaSFee 1%
+        tt.tDistributionFee = calculateDistributionFee(tAmount);    // _distributionFee 1%
+        tt.tCharityFee = calculateCharityFee(tAmount);              // _charityFee 2%
+        tt.tDevFundFee = calculateDevFundFee(tAmount);              // _devFundFee 1%
+        tt.tMarketingFundFee = calculateMarketingFundFee(tAmount);  // _marketingFundFee 1%
+        tt.tLotteryPotFee = calculateLotteryPotFee(tAmount);        // _lotteryPotFee 0.5%
+        tt.tBurn = calculateBurnFee(tAmount);                       // _burnFee 1%
+        tt.tHolderFee = calculateHolderFee(tAmount);                // _lotteryHolderFee 0.5%
+        tt.tLiquidity = calculateLiquidityFee(tAmount);             // _liquidityFee 1%
+
+        uint totalFee = tt.tDistributionFee.add(tt.tCharityFee).add(tt.tDevFundFee)
+        .add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn);
+        totalFee = totalFee.add(tt.tLiquidity).add(tt.tHolderFee).add(tt.tFaaSFee);
         tt.tTransferAmount = tAmount.sub(totalFee);
         return tt;
     }
 
     function _getRValues(uint256 tAmount, uint256 tDistributionFee, uint256 tCharityFee, uint256 tDevFundFee,
-        uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 rHolderFee, uint256 tLiquidity,
-        uint256 currentRate) private pure returns (rInfo memory rr) {
+        uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 tHolderFee, uint256 tLiquidity,
+        uint256 currentRate, uint256 tFaaSFee) private pure returns (rInfo memory rr) {
         rr.rAmount = tAmount.mul(currentRate);
         rr.rDistributionFee = tDistributionFee.mul(currentRate);
         rr.rCharityFee = tCharityFee.mul(currentRate);
@@ -1164,9 +1175,10 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         rr.rLotteryPotFee = tLotteryPotFee.mul(currentRate);
         rr.rBurn = tBurn.mul(currentRate);
         rr.rLiquidity = tLiquidity.mul(currentRate);
-        rr.rHolderFee = rHolderFee.mul(currentRate);
+        rr.rHolderFee = tHolderFee.mul(currentRate);
+        rr.rFaaSFee = tFaaSFee.mul(currentRate);
         uint totalFee = rr.rDistributionFee.add(rr.rCharityFee).add(rr.rDevFundFee).add(rr.rMarketingFundFee);
-        totalFee = totalFee.add(rr.rLotteryPotFee).add(rr.rBurn).add(rr.rLiquidity).add(rr.rHolderFee);
+        totalFee = totalFee.add(rr.rLotteryPotFee).add(rr.rBurn).add(rr.rLiquidity).add(rr.rHolderFee).add(rr.rFaaSFee);
         rr.rTransferAmount = rr.rAmount.sub(totalFee);
         return rr;
     }
@@ -1228,12 +1240,16 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         return _amount.mul(_lotteryHolderFee).div(1000);
     }
 
+    function calculateFaaSFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_FaaSFee).div(1000);
+    }
+
     function removeAllFee() private {
-        if (_distributionFee == 0 && _liquidityFee == 0) return;
 
         _previousDistributionFee = _distributionFee;
         _previousLiquidityFee = _liquidityFee;
 
+        _previous_FaaSFee = _FaaSFee;
         _previousCharityFee = _charityFee;
         _previousDevFundFee = _devFundFee;
         _previousMarketingFundFee = _marketingFundFee;
@@ -1241,6 +1257,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _previousBurnFee = _burnFee;
         _previousLotteryHolderFee = _lotteryHolderFee;
 
+        _FaaSFee = 0;
         _distributionFee = 0;
         _charityFee = 0;
         _devFundFee = 0;
@@ -1252,6 +1269,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
 
     function restoreAllFee() private {
+        _FaaSFee = _previous_FaaSFee;
         _distributionFee = _previousDistributionFee;
         _charityFee = _previousCharityFee;
         _devFundFee = _previousDevFundFee;
@@ -1570,7 +1588,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function lottery1of1k(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
 
-        if (value >= lotteryMinTicketValue && to == lotteryPotWalletAddress) {
+        if (value >= lotteryMinTicketValue && to == donationAddress) {
             // if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
@@ -1657,6 +1675,31 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 //            }
             lotteryHoldersIndex = 0;
         }
+    }
+
+    function setDonationAddress(address val) public onlyOwner {
+        donationAddress = val;
+    }
+    function setHolderAddress(address val) public onlyOwner {
+        holderAddress = val;
+    }
+    function setBurnAddress(address val) public onlyOwner {
+        burnAddress = val;
+    }
+    function setCharityWalletAddress(address val) public onlyOwner {
+        charityWalletAddress = val;
+    }
+    function setDevFundWalletAddress(address val) public onlyOwner {
+        devFundWalletAddress = val;
+    }
+    function setMarketingFundWalletAddress(address val) public onlyOwner {
+        marketingFundWalletAddress = val;
+    }
+    function setLotteryPotWalletAddress(address val) public onlyOwner {
+        lotteryPotWalletAddress = val;
+    }
+    function setFaaSWalletAddress(address val) public onlyOwner {
+        faaSWalletAddress = val;
     }
 
 }
