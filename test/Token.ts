@@ -267,7 +267,7 @@ describe("Mass Tests", () => {
 
             expect(fromWei(balanceOf_faaSWalletAddress)).to.be.equal('1.0');
 
-            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('1.5');
+            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
 
             // holder wallet should get 0.5% on each transfer
             expect(fromWei(balanceOf_holderAddress)).to.be.equal('0.5');
@@ -282,10 +282,10 @@ describe("Mass Tests", () => {
             expect(fromWei(balanceOf_devFundWalletAddress)).to.be.equal('1.0');
 
             // market wallet should get 2% on each transfer
-            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('1.5');
+            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('1.0');
 
             // lottery wallet should get 0.5% on each transfer
-            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('1.5');
+            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
 
         });
 
