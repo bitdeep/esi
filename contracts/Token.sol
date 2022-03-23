@@ -794,8 +794,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
     address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
     address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
-    address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
-    address public faaSWalletAddress = 0x0000000000000000000000000000000000000001;
+    address public lotteryPotWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
+    address public faaSWalletAddress = 0xC68D047E602cCED677F71Ed4D2b8E5E9Cf4D74E6;
 
     uint256 public _FaaSFee = 10; //1%
     uint256 private _previous_FaaSFee = _FaaSFee;
@@ -867,6 +867,11 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _;
         inSwapAndLiquify = false;
     }
+
+    // control % of a buy in the first days
+    uint antiAbuseDay1 = 50; // 0.5%
+    uint antiAbuseDay2 = 100; // 1.0%
+    uint antiAbuseDay3 = 150; // 1.5%
 
     constructor (address mintSupplyTo, address router) public {
         _rOwned[mintSupplyTo] = _rTotal;
@@ -1102,13 +1107,26 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
         _rOwned[faaSWalletAddress] = _rOwned[faaSWalletAddress].add(rr.rFaaSFee);
 
-        emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
-        emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
-        emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
-        emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
-        emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
-        emit Transfer(msg.sender, burnAddress, tt.tBurn);
-        emit Transfer(msg.sender, faaSWalletAddress, tt.tFaaSFee);
+        if( tt.tHolderFee > 0)
+            emit Transfer(msg.sender, holderAddress, tt.tHolderFee);
+
+        if( tt.tCharityFee > 0)
+            emit Transfer(msg.sender, charityWalletAddress, tt.tCharityFee);
+
+        if( tt.tDevFundFee > 0 )
+            emit Transfer(msg.sender, devFundWalletAddress, tt.tDevFundFee);
+
+        if( tt.tMarketingFundFee > 0 )
+            emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
+
+        if( tt.tLotteryPotFee > 0 )
+            emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
+
+        if( tt.tBurn > 0 )
+            emit Transfer(msg.sender, burnAddress, tt.tBurn);
+
+        if( tt.tFaaSFee > 0 )
+            emit Transfer(msg.sender, faaSWalletAddress, tt.tFaaSFee);
 
     }
 
@@ -1314,15 +1332,15 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         // bot \ whales prevention
         if (now <= (_creationTime.add(1 days))) {
             lastCreationTime = _creationTime.add(1 days);
-            allowedAmount = tSupply.div(10000).mul(10);
+            allowedAmount = tSupply.mul(antiAbuseDay1).div(10000);
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 1");
         } else if (now <= (_creationTime.add(2 days))) {
             lastCreationTime = _creationTime.add(2 days);
-            allowedAmount = tSupply.div(10000).mul(20);
+            allowedAmount = tSupply.mul(antiAbuseDay2).div(10000);
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 2");
         } else if (now <= (_creationTime.add(3 days))) {
             lastCreationTime = _creationTime.add(3 days);
-            allowedAmount = tSupply.div(10000).mul(30);
+            allowedAmount = tSupply.mul(antiAbuseDay3).div(10000);
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 3");
         }
     }
@@ -1701,5 +1719,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function setFaaSWalletAddress(address val) public onlyOwner {
         faaSWalletAddress = val;
     }
+
 
 }

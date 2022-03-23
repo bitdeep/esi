@@ -77,7 +77,7 @@ describe("Token contract", () => {
 
     });
 
-    /*
+
 describe("Mass Tests", () => {
     it("Do 1000 tranfers", async () => {
         const users = await ethers.getSigners();
@@ -91,19 +91,24 @@ describe("Mass Tests", () => {
         console.log(dev);
 
         await token.transfer(user, balanceOfDev)
-
-        for (let i = 0; i < 1000; i++) {
+        let lottery1of1kWinner:any = {}, lotteryHoldersWinner:any = {};
+        for (let i = 0; i < 10; i++) {
             const privateKey = "0x" + crypto.randomBytes(32).toString('hex');
             const wallet = new ethers.Wallet(privateKey);
             const addr = wallet.address;
             console.log(`${i} ${addr}`);
             await token.connect(USER).transfer(addr, lotteryMinTicketValue)
             await token.connect(USER).transfer(addr, lotteryHolderMinBalance)
+            const _lotteryHoldersWinner:string = await token.lotteryHoldersWinner();
+            lotteryHoldersWinner[ _lotteryHoldersWinner ] = true;
         }
+
+        console.log('lotteryHoldersWinner', lotteryHoldersWinner);
+
     });
 
 });
-*/
+
 
     describe("Swap", () => {
 
@@ -262,7 +267,7 @@ describe("Mass Tests", () => {
 
             expect(fromWei(balanceOf_faaSWalletAddress)).to.be.equal('1.0');
 
-            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
+            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('1.5');
 
             // holder wallet should get 0.5% on each transfer
             expect(fromWei(balanceOf_holderAddress)).to.be.equal('0.5');
@@ -277,10 +282,10 @@ describe("Mass Tests", () => {
             expect(fromWei(balanceOf_devFundWalletAddress)).to.be.equal('1.0');
 
             // market wallet should get 2% on each transfer
-            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('1.0');
+            expect(fromWei(balanceOf_marketingFundWalletAddress)).to.be.equal('1.5');
 
             // lottery wallet should get 0.5% on each transfer
-            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('0.5');
+            expect(fromWei(balanceOf_lotteryPotWalletAddress)).to.be.equal('1.5');
 
         });
 
