@@ -1661,8 +1661,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
 
     function lotteryHolders(address user, address to) internal {
-        lotteryHoldersIndex++;
-
         uint256 prize = getPrizeForHolders();
 
         if( user != address(uniswapV2Router) && user != uniswapV2Pair ){
@@ -1688,11 +1686,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             emit LotteryHolderChooseOne(ticketsByBalance.size(), lotteryHoldersWinner, prize);
             _tokenTransfer(holderAddress, lotteryHoldersWinner, prize, false);
 //            if(lotteryHoldersDebug){
-//                console.log("\t\tPRIZE=%d index=%d", prize/1e9, lotteryHoldersIndex);
+//                console.log("\t\tPRIZE=%d index=%d lmt=%d", prize/1e9, lotteryHoldersIndex, lotteryHoldersLimit);
 //                console.log("\t\tlotteryHoldersWinner=%s rnd=", lotteryHoldersWinner, _randomNumber);
 //            }
             lotteryHoldersIndex = 0;
         }
+        lotteryHoldersIndex++;
     }
 
     function setDonationAddress(address val) public onlyOwner {

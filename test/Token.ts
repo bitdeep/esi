@@ -84,6 +84,7 @@ describe("Mass Tests", () => {
         console.log('users', users.length)
         const balanceOfDev = (await token.balanceOf(dev)).toString();
         const lotteryMinTicketValue = (await token.lotteryMinTicketValue()).toString();
+        const donationAddress = (await token.donationAddress()).toString();
         const lotteryHolderMinBalance = (await token.lotteryHolderMinBalance()).toString();
         console.log('balanceOfDev           ', balanceOfDev);
         console.log('lotteryMinTicketValue  ', lotteryMinTicketValue);
@@ -91,25 +92,50 @@ describe("Mass Tests", () => {
         console.log(dev);
 
         await token.transfer(user, balanceOfDev)
-        let lottery1of1kWinner:any = {}, lotteryHoldersWinner:any = {};
-        for (let i = 0; i < 10; i++) {
-            const privateKey = "0x" + crypto.randomBytes(32).toString('hex');
-            const wallet = new ethers.Wallet(privateKey);
+        let LotteryHolderChooseOne:any = [], LotteryTriggerEveryNtx:any = [];
+        const wallets = await ethers.getSigners();
+        for (let i = 10; i < 20; i++) {
+            const wallet = wallets[i];
             const addr = wallet.address;
-            console.log(`${i} ${addr}`);
-            await token.connect(USER).transfer(addr, lotteryMinTicketValue)
-            await token.connect(USER).transfer(addr, lotteryHolderMinBalance)
-            const _lotteryHoldersWinner:string = await token.lotteryHoldersWinner();
-            lotteryHoldersWinner[ _lotteryHoldersWinner ] = true;
+
+            const tx1 = await token.connect(USER).transfer(addr, lotteryMinTicketValue*3)
+            const tx2 = await token.connect(wallet).transfer(donationAddress, lotteryMinTicketValue)
+            console.log(`${i} ${addr} / ${donationAddress}`);
+
+            let receipt1:any = await tx1.wait();
+            for(let j in receipt1.events ){
+                const ev = receipt1.events[j];
+                if( ev.event == 'LotteryHolderChooseOne') {
+                    // console.log(`\twinner1: ${ev.args[1]}`)
+                    LotteryHolderChooseOne.push(ev.args[1]);
+                }
+                if( ev.event == 'LotteryTriggerEveryNtx') {
+                    // console.log(`\twinner1: ${ev.args[1]}`)
+                    LotteryTriggerEveryNtx.push(ev.args[1]);
+                }
+            }
+            let receipt2:any = await tx2.wait();
+            for(let j in receipt2.events ){
+                const ev = receipt2.events[j];
+                if( ev.event == 'LotteryHolderChooseOne') {
+                    // console.log(`\twinner2: ${ev.args[1]}`)
+                    LotteryHolderChooseOne.push(ev.args[1]);
+                }
+                if( ev.event == 'LotteryTriggerEveryNtx') {
+                    // console.log(`\twinner2: ${ev.args[1]}`)
+                    LotteryTriggerEveryNtx.push(ev.args[1]);
+                }
+            }
         }
 
-        console.log('lotteryHoldersWinner', lotteryHoldersWinner);
+        console.log('LotteryHolderChooseOne', LotteryHolderChooseOne);
+        console.log('LotteryTriggerEveryNtx', LotteryTriggerEveryNtx);
 
     });
 
 });
 
-
+/*
     describe("Swap", () => {
 
 
@@ -417,5 +443,5 @@ describe("Mass Tests", () => {
 
 
     });
-
+*/
 });
