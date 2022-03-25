@@ -78,66 +78,64 @@ describe("Token contract", () => {
     });
 
 
-describe("Mass Tests", () => {
-    it("Do 1000 tranfers", async () => {
-        const users = await ethers.getSigners();
-        console.log('users', users.length)
-        const balanceOfDev = (await token.balanceOf(dev)).toString();
-        const lotteryMinTicketValue = (await token.lotteryMinTicketValue()).toString();
-        const donationAddress = (await token.donationAddress()).toString();
-        const lotteryHolderMinBalance = (await token.lotteryHolderMinBalance()).toString();
-        console.log('balanceOfDev           ', balanceOfDev);
-        console.log('lotteryMinTicketValue  ', lotteryMinTicketValue);
-        console.log('lotteryHolderMinBalance', lotteryHolderMinBalance);
-        console.log(dev);
+    describe("Mass Tests", () => {
+        it("Do 20 tranfers", async () => {
+            const users = await ethers.getSigners();
+            // console.log('users', users.length)
+            const balanceOfDev = (await token.balanceOf(dev)).toString();
+            const lotteryMinTicketValue = (await token.lotteryMinTicketValue()).toString();
+            const donationAddress = (await token.donationAddress()).toString();
+            const lotteryHolderMinBalance = (await token.lotteryHolderMinBalance()).toString();
+            // console.log('balanceOfDev           ', balanceOfDev);
+            // console.log('lotteryMinTicketValue  ', lotteryMinTicketValue);
+            // console.log('lotteryHolderMinBalance', lotteryHolderMinBalance);
+            // console.log(dev);
 
-        await token.transfer(user, balanceOfDev)
-        let LotteryHolderChooseOne:any = [], LotteryTriggerEveryNtx:any = [];
-        const wallets = await ethers.getSigners();
-        for (let i = 10; i < 20; i++) {
-            const wallet = wallets[i];
-            const addr = wallet.address;
+            await token.transfer(user, balanceOfDev)
+            let LotteryHolderChooseOne: any = [], LotteryTriggerEveryNtx: any = [];
+            const wallets = await ethers.getSigners();
+            for (let i = 0; i < 20; i++) {
+                const wallet = wallets[i];
+                const addr = wallet.address;
 
-            const tx1 = await token.connect(USER).transfer(addr, lotteryMinTicketValue*3)
-            const tx2 = await token.connect(wallet).transfer(donationAddress, lotteryMinTicketValue)
-            console.log(`${i} ${addr} / ${donationAddress}`);
+                const tx1 = await token.connect(USER).transfer(addr, lotteryMinTicketValue * 3)
+                const tx2 = await token.connect(wallet).transfer(donationAddress, lotteryMinTicketValue)
+                // console.log(`${i} ${addr} / ${donationAddress}`);
 
-            let receipt1:any = await tx1.wait();
-            for(let j in receipt1.events ){
-                const ev = receipt1.events[j];
-                if( ev.event == 'LotteryHolderChooseOne') {
-                    // console.log(`\twinner1: ${ev.args[1]}`)
-                    LotteryHolderChooseOne.push(ev.args[1]);
+                let receipt1: any = await tx1.wait();
+                for (let j in receipt1.events) {
+                    const ev = receipt1.events[j];
+                    if (ev.event == 'LotteryHolderChooseOne') {
+                        // console.log(`\twinner1: ${ev.args[1]}`)
+                        LotteryHolderChooseOne.push(ev.args[1]);
+                    }
+                    if (ev.event == 'LotteryTriggerEveryNtx') {
+                        // console.log(`\twinner1: ${ev.args[1]}`)
+                        LotteryTriggerEveryNtx.push(ev.args[1]);
+                    }
                 }
-                if( ev.event == 'LotteryTriggerEveryNtx') {
-                    // console.log(`\twinner1: ${ev.args[1]}`)
-                    LotteryTriggerEveryNtx.push(ev.args[1]);
+                let receipt2: any = await tx2.wait();
+                for (let j in receipt2.events) {
+                    const ev = receipt2.events[j];
+                    if (ev.event == 'LotteryHolderChooseOne') {
+                        // console.log(`\twinner2: ${ev.args[1]}`)
+                        LotteryHolderChooseOne.push(ev.args[1]);
+                    }
+                    if (ev.event == 'LotteryTriggerEveryNtx') {
+                        // console.log(`\twinner2: ${ev.args[1]}`)
+                        LotteryTriggerEveryNtx.push(ev.args[1]);
+                    }
                 }
             }
-            let receipt2:any = await tx2.wait();
-            for(let j in receipt2.events ){
-                const ev = receipt2.events[j];
-                if( ev.event == 'LotteryHolderChooseOne') {
-                    // console.log(`\twinner2: ${ev.args[1]}`)
-                    LotteryHolderChooseOne.push(ev.args[1]);
-                }
-                if( ev.event == 'LotteryTriggerEveryNtx') {
-                    // console.log(`\twinner2: ${ev.args[1]}`)
-                    LotteryTriggerEveryNtx.push(ev.args[1]);
-                }
-            }
-        }
 
-        console.log('LotteryHolderChooseOne', LotteryHolderChooseOne);
-        console.log('LotteryTriggerEveryNtx', LotteryTriggerEveryNtx);
+            // console.log('LotteryHolderChooseOne', LotteryHolderChooseOne);
+            // console.log('LotteryTriggerEveryNtx', LotteryTriggerEveryNtx);
+
+        });
 
     });
 
-});
-
-/*
     describe("Swap", () => {
-
 
         it("Add liquidity and swap both sides", async () => {
 
@@ -372,10 +370,12 @@ describe("Mass Tests", () => {
 
             await token.transfer(donationAddress, lotteryMinTicketValue);
             await token.connect(USER).transfer(donationAddress, lotteryMinTicketValue);
+
             await token.connect(USER1).transfer(donationAddress, lotteryMinTicketValue);
             await token.connect(USER2).transfer(donationAddress, lotteryMinTicketValue);
             await token.connect(USER3).transfer(donationAddress, lotteryMinTicketValue);
 
+            await token.transfer(donationAddress, lotteryMinTicketValue);
             await token.transfer(donationAddress, lotteryMinTicketValue);
             await token.transfer(donationAddress, lotteryMinTicketValue);
             await token.transfer(donationAddress, lotteryMinTicketValue);
@@ -404,7 +404,6 @@ describe("Mass Tests", () => {
             await token.transfer(donationAddress, lotteryMinTicketValue);
             await token.transfer(donationAddress, lotteryMinTicketValue);
             await token.transfer(donationAddress, lotteryMinTicketValue);
-
 
         });
 
@@ -443,5 +442,5 @@ describe("Mass Tests", () => {
 
 
     });
-*/
+
 });

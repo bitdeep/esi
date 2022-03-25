@@ -1311,17 +1311,11 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
 
 
-    function _antiAbuse(address from, address to, uint256 amount,
-        bool isBuy, bool isSell) private view {
+    function _antiAbuse(address from, address to, uint256 amount) private view {
 
         if (from == owner() || to == owner())
         //  if owner we just return or we can't add liquidity
             return;
-
-//        console.log("from=%s to=%s", from, to);
-//        console.log("isBuy=%s isSell=%s", isBuy, isSell);
-
-        require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
 
         uint256 lastCreationTime;
         uint256 allowedAmount;
@@ -1362,11 +1356,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
             emit WhiteListTransfer(from, to, amount);
         } else {
 
-            bool isBuy = from == uniswapV2Pair || from == address(uniswapV2Router);
-            bool isSell = to == uniswapV2Pair || to == address(uniswapV2Router);
-
-            if( isBuy ){
-                _antiAbuse(from, to, amount, isBuy, isSell);
+            if( from == uniswapV2Pair || from == address(uniswapV2Router) ){
+                _antiAbuse(from, to, amount);
             }
 
             // is the token balance of this contract address over the min number of
