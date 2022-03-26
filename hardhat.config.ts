@@ -22,6 +22,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      {
+        version: '0.8.13',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          },
+        },
+      },
     ],
   },
   networks: {
@@ -47,7 +56,7 @@ const config: HardhatUserConfig = {
     apiKey: `${process.env.API_KEY}`
   },
   gasReporter: {
-    enabled: true
+    enabled: false
   }
 };
 

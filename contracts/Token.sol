@@ -874,6 +874,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint antiAbuseDay3 = 150; // 1.5%
 
     constructor (address mintSupplyTo, address router) public {
+        console.log('_tTotal=%s', _tTotal);
         _rOwned[mintSupplyTo] = _rTotal;
 
         // we whitelist treasure and owner to allow pool management
@@ -1317,7 +1318,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         //  if owner we just return or we can't add liquidity
             return;
 
-        uint256 lastCreationTime;
         uint256 allowedAmount;
 
         (, uint256 tSupply) = _getCurrentSupply();
@@ -1325,15 +1325,17 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
         // bot \ whales prevention
         if (now <= (_creationTime.add(1 days))) {
-            lastCreationTime = _creationTime.add(1 days);
             allowedAmount = tSupply.mul(antiAbuseDay1).div(10000);
+
+            bool s = lastUserBalance < allowedAmount;
+            console.log('lastUserBalance = %s', lastUserBalance);
+            console.log('allowedAmount   = %s status=', allowedAmount, s);
+
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 1");
         } else if (now <= (_creationTime.add(2 days))) {
-            lastCreationTime = _creationTime.add(2 days);
             allowedAmount = tSupply.mul(antiAbuseDay2).div(10000);
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 2");
         } else if (now <= (_creationTime.add(3 days))) {
-            lastCreationTime = _creationTime.add(3 days);
             allowedAmount = tSupply.mul(antiAbuseDay3).div(10000);
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 3");
         }
