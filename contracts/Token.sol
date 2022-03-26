@@ -794,7 +794,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
     address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
     address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
-    address public lotteryPotWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
+    address public donationLotteryPrizeWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
     address public faaSWalletAddress = 0xC68D047E602cCED677F71Ed4D2b8E5E9Cf4D74E6;
 
     uint256 public _FaaSFee = 10; //1%
@@ -812,8 +812,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 public _marketingFundFee = 10; //1%
     uint256 private _previousMarketingFundFee = _marketingFundFee;
 
-    uint256 public _lotteryPotFee = 5; //0.5%
-    uint256 private _previousLotteryPotFee = _lotteryPotFee;
+    uint256 public _donationLotteryPrizeFee = 5; //0.5%
+    uint256 private _previousDonationLotteryPrizeFee = _donationLotteryPrizeFee;
 
     uint256 public _burnFee = 10; //1%
     uint256 private _previousBurnFee = _burnFee;
@@ -837,18 +837,18 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
 
     // mint transfer value to get a ticket
-    uint256 public lotteryMinTicketValue = 1_000_000_000;
+    uint256 public minimumDonationForTicket = 1_000_000_000;
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
-    bool public lottery1of1kDebug = true; // disable on testing env only
+    bool public donationLotteryDebug = true; // disable on testing env only
 
-    bool public lottery1of1kEnabled = true;
-    address[] private lottery1of1kUsers; // list of tickets for 1000 tx prize
-    uint256 public lottery1of1kIndex; // index of last winner
-    address public lottery1of1kWinner; // last random winner
-    uint256 public lottery1of1kLimit = 3;
-    uint256 public lottery1of1kMinLimit = 3;
+    bool public donationLotteryEnabled = true;
+    address[] private donationLotteryUsers; // list of tickets for 1000 tx prize
+    uint256 public donationLotteryIndex; // index of last winner
+    address public donationLotteryWinner; // last random winner
+    uint256 public donationLotteryLimit = 3;
+    uint256 public donationLotteryMinLimit = 3;
 
     bool public lotteryHoldersEnabled = true;
     bool public lotteryHoldersDebug = true;
@@ -892,7 +892,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[mintSupplyTo] = true;
-        _isExcludedFromFee[lotteryPotWalletAddress] = true;
+        _isExcludedFromFee[donationLotteryPrizeWalletAddress] = true;
         // _isExcludedFromFee[donationAddress] = true;
         _isExcludedFromFee[devFundWalletAddress] = true;
         _isExcludedFromFee[marketingFundWalletAddress] = true;
@@ -1067,8 +1067,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _marketingFundFee = marketingFundFee;
     }
 
-    function setLotteryPotFeePercent(uint256 lotteryPotFee) external onlyOwner() {
-        _lotteryPotFee = lotteryPotFee;
+    function setDonationLotteryPrizeFeePercent(uint256 donationLotteryPrizeFee) external onlyOwner() {
+        _donationLotteryPrizeFee = donationLotteryPrizeFee;
     }
 
     function setBurnFeePercent(uint256 burnFee) external onlyOwner() {
@@ -1097,13 +1097,13 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function _reflectFee(rInfo memory rr, tInfo memory tt) private {
         _rTotal = _rTotal.sub(rr.rDistributionFee);
         _tFeeTotal = _tFeeTotal.add(tt.tDistributionFee).add(tt.tCharityFee).add(tt.tDevFundFee)
-        .add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn).add(tt.tHolderFee).add(tt.tFaaSFee);
+        .add(tt.tMarketingFundFee).add(tt.tDonationLotteryPrizeFee).add(tt.tBurn).add(tt.tHolderFee).add(tt.tFaaSFee);
 
         _rOwned[holderAddress] = _rOwned[holderAddress].add(rr.rHolderFee);
         _rOwned[charityWalletAddress] = _rOwned[charityWalletAddress].add(rr.rCharityFee);
         _rOwned[devFundWalletAddress] = _rOwned[devFundWalletAddress].add(rr.rDevFundFee);
         _rOwned[marketingFundWalletAddress] = _rOwned[marketingFundWalletAddress].add(rr.rMarketingFundFee);
-        _rOwned[lotteryPotWalletAddress] = _rOwned[lotteryPotWalletAddress].add(rr.rLotteryPotFee);
+        _rOwned[donationLotteryPrizeWalletAddress] = _rOwned[donationLotteryPrizeWalletAddress].add(rr.rDonationLotteryPrizeFee);
         _rOwned[burnAddress] = _rOwned[burnAddress].add(rr.rBurn);
         _rOwned[faaSWalletAddress] = _rOwned[faaSWalletAddress].add(rr.rFaaSFee);
 
@@ -1119,8 +1119,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         if( tt.tMarketingFundFee > 0 )
             emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
 
-        if( tt.tLotteryPotFee > 0 )
-            emit Transfer(msg.sender, lotteryPotWalletAddress, tt.tLotteryPotFee);
+        if( tt.tdonationLotteryPrizeFee > 0 )
+            emit Transfer(msg.sender, donationLotteryPrizeWalletAddress, tt.tDonationLotteryPrizeFee);
 
         if( tt.tBurn > 0 )
             emit Transfer(msg.sender, burnAddress, tt.tBurn);
@@ -1137,7 +1137,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         uint256 tCharityFee;
         uint256 tDevFundFee;
         uint256 tMarketingFundFee;
-        uint256 tLotteryPotFee;
+        uint256 tDonationLotteryPrizeFee;
         uint256 tBurn;
         uint256 tHolderFee;
         uint256 tFaaSFee;
@@ -1150,7 +1150,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         uint256 rCharityFee;
         uint256 rDevFundFee;
         uint256 rMarketingFundFee;
-        uint256 rLotteryPotFee;
+        uint256 rDonationLotteryPrizeFee;
         uint256 rBurn;
         uint256 rLiquidity;
         uint256 rHolderFee;
@@ -1160,7 +1160,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function _getValues(uint256 tAmount) private view returns (rInfo memory rr, tInfo memory tt) {
         tt = _getTValues(tAmount);
         rr = _getRValues(tAmount, tt.tDistributionFee, tt.tCharityFee, tt.tDevFundFee, tt.tMarketingFundFee,
-            tt.tLotteryPotFee, tt.tBurn, tt.tHolderFee, tt.tLiquidity, _getRate(), tt.tFaaSFee);
+            tt.tDonationLotteryPrizeFee, tt.tBurn, tt.tHolderFee, tt.tLiquidity, _getRate(), tt.tFaaSFee);
         return (rr, tt);
     }
 
@@ -1170,33 +1170,33 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         tt.tCharityFee = calculateCharityFee(tAmount);              // _charityFee 2%
         tt.tDevFundFee = calculateDevFundFee(tAmount);              // _devFundFee 1%
         tt.tMarketingFundFee = calculateMarketingFundFee(tAmount);  // _marketingFundFee 1%
-        tt.tLotteryPotFee = calculateLotteryPotFee(tAmount);        // _lotteryPotFee 0.5%
+        tt.tDonationLotteryPrizeFee = calculateDonationLotteryPrizeFee(tAmount);        // _donationLotteryPrizeFee 0.5%
         tt.tBurn = calculateBurnFee(tAmount);                       // _burnFee 1%
         tt.tHolderFee = calculateHolderFee(tAmount);                // _lotteryHolderFee 0.5%
         tt.tLiquidity = calculateLiquidityFee(tAmount);             // _liquidityFee 1%
 
         uint totalFee = tt.tDistributionFee.add(tt.tCharityFee).add(tt.tDevFundFee)
-        .add(tt.tMarketingFundFee).add(tt.tLotteryPotFee).add(tt.tBurn);
+        .add(tt.tMarketingFundFee).add(tt.tDonationLotteryPrizeFee).add(tt.tBurn);
         totalFee = totalFee.add(tt.tLiquidity).add(tt.tHolderFee).add(tt.tFaaSFee);
         tt.tTransferAmount = tAmount.sub(totalFee);
         return tt;
     }
 
     function _getRValues(uint256 tAmount, uint256 tDistributionFee, uint256 tCharityFee, uint256 tDevFundFee,
-        uint256 tMarketingFundFee, uint256 tLotteryPotFee, uint256 tBurn, uint256 tHolderFee, uint256 tLiquidity,
+        uint256 tMarketingFundFee, uint256 tDonationLotteryPrizeFee, uint256 tBurn, uint256 tHolderFee, uint256 tLiquidity,
         uint256 currentRate, uint256 tFaaSFee) private pure returns (rInfo memory rr) {
         rr.rAmount = tAmount.mul(currentRate);
         rr.rDistributionFee = tDistributionFee.mul(currentRate);
         rr.rCharityFee = tCharityFee.mul(currentRate);
         rr.rDevFundFee = tDevFundFee.mul(currentRate);
         rr.rMarketingFundFee = tMarketingFundFee.mul(currentRate);
-        rr.rLotteryPotFee = tLotteryPotFee.mul(currentRate);
+        rr.rDonationLotteryPrizeFee = tDonationLotteryPrizeFee.mul(currentRate);
         rr.rBurn = tBurn.mul(currentRate);
         rr.rLiquidity = tLiquidity.mul(currentRate);
         rr.rHolderFee = tHolderFee.mul(currentRate);
         rr.rFaaSFee = tFaaSFee.mul(currentRate);
         uint totalFee = rr.rDistributionFee.add(rr.rCharityFee).add(rr.rDevFundFee).add(rr.rMarketingFundFee);
-        totalFee = totalFee.add(rr.rLotteryPotFee).add(rr.rBurn).add(rr.rLiquidity).add(rr.rHolderFee).add(rr.rFaaSFee);
+        totalFee = totalFee.add(rr.rDonationLotteryPrizeFee).add(rr.rBurn).add(rr.rLiquidity).add(rr.rHolderFee).add(rr.rFaaSFee);
         rr.rTransferAmount = rr.rAmount.sub(totalFee);
         return rr;
     }
@@ -1242,8 +1242,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         return _amount.mul(_marketingFundFee).div(1000);
     }
 
-    function calculateLotteryPotFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_lotteryPotFee).div(1000);
+    function calculateDonationLotteryPrizeFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_donationLotteryPrizeFee).div(1000);
     }
 
     function calculateBurnFee(uint256 _amount) private view returns (uint256) {
@@ -1271,7 +1271,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _previousCharityFee = _charityFee;
         _previousDevFundFee = _devFundFee;
         _previousMarketingFundFee = _marketingFundFee;
-        _previousLotteryPotFee = _lotteryPotFee;
+        _previousDonationLotteryPrizeFee = _donationLotteryPrizeFee;
         _previousBurnFee = _burnFee;
         _previousLotteryHolderFee = _lotteryHolderFee;
 
@@ -1280,7 +1280,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _charityFee = 0;
         _devFundFee = 0;
         _marketingFundFee = 0;
-        _lotteryPotFee = 0;
+        _donationLotteryPrizeFee = 0;
         _burnFee = 0;
         _liquidityFee = 0;
         _lotteryHolderFee = 0;
@@ -1292,7 +1292,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _charityFee = _previousCharityFee;
         _devFundFee = _previousDevFundFee;
         _marketingFundFee = _previousMarketingFundFee;
-        _lotteryPotFee = _previousLotteryPotFee;
+        _donationLotteryPrizeFee = _previousDonationLotteryPrizeFee;
         _burnFee = _previousBurnFee;
         _liquidityFee = _previousLiquidityFee;
         _lotteryHolderFee = _previousLotteryHolderFee;
@@ -1514,11 +1514,11 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
 
     function getTotalFees() internal view returns (uint256) {
-        return _charityFee + _liquidityFee + _burnFee + _lotteryPotFee + _marketingFundFee + _devFundFee;
+        return _charityFee + _liquidityFee + _burnFee + _donationLotteryPrizeFee + _marketingFundFee + _devFundFee;
     }
 
     function getPrizeForEach1k() public view returns (uint256) {
-        return balanceOf(lotteryPotWalletAddress);
+        return balanceOf(donationLotteryPrizeWalletAddress);
     }
 
     function getPrizeForHolders() public view returns (uint256) {
@@ -1540,17 +1540,17 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function setLotteryHolderMinBalance(uint256 val) public onlyOwner {
         lotteryHolderMinBalance = val;
     }
-    function setLotteryMinTicketValue(uint256 val) public onlyOwner {
-        lotteryMinTicketValue = val;
+    function setMinimumDonationForTicket(uint256 val) public onlyOwner {
+        minimumDonationForTicket = val;
     }
     function setLotteryHoldersEnabled(bool val) public onlyOwner {
         lotteryHoldersEnabled = val;
     }
     function lotteryUserTickets(address _user) public view returns (uint256[] memory){
-        uint[] memory my = new uint256[](lottery1of1kUsers.length);
+        uint[] memory my = new uint256[](donationLotteryUsers.length);
         uint count;
-        for (uint256 i = 0; i < lottery1of1kUsers.length; i++) {
-            if (lottery1of1kUsers[i] == _user) {
+        for (uint256 i = 0; i < donationLotteryUsers.length; i++) {
+            if (donationLotteryUsers[i] == _user) {
                 my[count++] = i;
             }
         }
@@ -1558,15 +1558,15 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     }
 
     function lotteryTotalTicket() public view returns (uint256){
-        return lottery1of1kUsers.length;
+        return donationLotteryUsers.length;
     }
 
     // process both lottery
 
     function lotteryOnTransfer(address user, address to, uint256 value) internal {
 
-        if( lottery1of1kEnabled ){
-            lottery1of1k(user, to, value);
+        if( donationLotteryEnabled ){
+            donationLottery(user, to, value);
         }
 
         if( lotteryHoldersEnabled ){
@@ -1577,58 +1577,58 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
     // 0.5% for holders of certain amount of tokens for random chance every 1000 tx
     // lottery that get triggered on N number of TX
-    event lottery1of1kTicket(address user, address to, uint256 value, uint256 lottery1of1kIndex, uint256 lottery1of1kUsers);
+    event donationLotteryTicket(address user, address to, uint256 value, uint256 donationLotteryIndex, uint256 donationLotteryUsers);
     event LotteryTriggerEveryNtx(uint256 ticket, address winner, uint256 prize);
-    function setLottery1of1kLimit(uint256 val) public onlyOwner {
-        lottery1of1kLimit = val;
+    function setDonationLotteryLimit(uint256 val) public onlyOwner {
+        donationLotteryLimit = val;
     }
-    function setLottery1of1kMinLimit(uint256 val) public onlyOwner {
-        lottery1of1kMinLimit = val;
+    function setDonationLotteryMinLimit(uint256 val) public onlyOwner {
+        donationLotteryMinLimit = val;
     }
-    function setLottery1of1kEnabled(bool val) public onlyOwner {
-        lottery1of1kEnabled = val;
+    function setDonationLotteryEnabled(bool val) public onlyOwner {
+        donationLotteryEnabled = val;
     }
-    function setLottery1of1kDebug(bool val) public onlyOwner {
-        lottery1of1kDebug = val;
+    function setDonationLotteryDebug(bool val) public onlyOwner {
+        donationLotteryDebug = val;
     }
     function setLotteryHoldersDebug(bool val) public onlyOwner {
         lotteryHoldersDebug = val;
     }
-    function lottery1of1k(address user, address to, uint256 value) internal {
+    function donationLottery(address user, address to, uint256 value) internal {
         uint256 prize = getPrizeForEach1k();
 
-        if (value >= lotteryMinTicketValue && to == donationAddress) {
-            // if(lottery1of1kDebug) console.log("- lottery1of1k> donation=%s value=%d lottery1of1kLimit=%d", lotteryPotWalletAddress, value, lottery1of1kLimit);
+        if (value >= minimumDonationForTicket && to == donationAddress) {
+            // if(donationLotteryDebug) console.log("- donationLottery> donation=%s value=%d donationLotteryLimit=%d", donationLotteryPrizeWalletAddress, value, donationLotteryLimit);
             uint256 uts = userTicketsTs[user];
             if (disableTicketsTs == false || uts == 0 || uts.add(3600) <= block.timestamp) {
-                lottery1of1kIndex++;
-                lottery1of1kUsers.push(user);
+                donationLotteryIndex++;
+                donationLotteryUsers.push(user);
                 userTicketsTs[user] = block.timestamp;
-                emit lottery1of1kTicket(user, to, value, lottery1of1kIndex, lottery1of1kUsers.length);
-                // if(lottery1of1kDebug) console.log("\tlottery1of1k> added index=%d length=%d prize=%d", lottery1of1kIndex, lottery1of1kUsers.length, prize);
+                emit donationLotteryTicket(user, to, value, donationLotteryIndex, donationLotteryUsers.length);
+                // if(donationLotteryDebug) console.log("\tdonationLottery> added index=%d length=%d prize=%d", donationLotteryIndex, donationLotteryUsers.length, prize);
             }
         }
 
-        // console.log("prize=%d index=%d limit =%d", prize, lottery1of1kIndex, lottery1of1kLimit);
-        if (prize > 0 && lottery1of1kIndex >= lottery1of1kLimit) {
-            uint256 _mod = lottery1of1kUsers.length;
-            // console.log("\tlength=%d limist=%d", lottery1of1kUsers.length, lottery1of1kMinLimit);
-            if (lottery1of1kUsers.length < lottery1of1kMinLimit){
+        // console.log("prize=%d index=%d limit =%d", prize, donationLotteryIndex, donationLotteryLimit);
+        if (prize > 0 && donationLotteryIndex >= donationLotteryLimit) {
+            uint256 _mod = donationLotteryUsers.length;
+            // console.log("\tlength=%d limist=%d", donationLotteryUsers.length, donationLotteryMinLimit);
+            if (donationLotteryUsers.length < donationLotteryMinLimit){
                 return;
             }
             uint256 _randomNumber;
             bytes32 _structHash = keccak256(abi.encode(msg.sender, block.difficulty, gasleft(), prize));
             _randomNumber = uint256(_structHash);
             assembly {_randomNumber := mod(_randomNumber, _mod)}
-            lottery1of1kWinner = lottery1of1kUsers[_randomNumber];
-            emit LotteryTriggerEveryNtx(_randomNumber, lottery1of1kWinner, prize);
-            _tokenTransfer(lotteryPotWalletAddress, lottery1of1kWinner, prize, false);
-//            if(lottery1of1kDebug){
-//                console.log("\t\tlottery1of1k> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
-//                console.log("\t\tlottery1of1k> TRIGGER winner=%s", lottery1of1kWinner);
+            donationLotteryWinner = donationLotteryUsers[_randomNumber];
+            emit LotteryTriggerEveryNtx(_randomNumber, donationLotteryWinner, prize);
+            _tokenTransfer(donationLotteryPrizeWalletAddress, donationLotteryWinner, prize, false);
+//            if(donationLotteryDebug){
+//                console.log("\t\tdonationLottery> TRIGGER _mod=%d rnd=%d prize=%d", _mod, _randomNumber, prize);
+//                console.log("\t\tdonationLottery> TRIGGER winner=%s", donationLotteryWinner);
 //            }
-            lottery1of1kIndex = 0;
-            delete lottery1of1kUsers;
+            donationLotteryIndex = 0;
+            delete donationLotteryUsers;
         }
     }
 
@@ -1703,8 +1703,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function setMarketingFundWalletAddress(address val) public onlyOwner {
         marketingFundWalletAddress = val;
     }
-    function setLotteryPotWalletAddress(address val) public onlyOwner {
-        lotteryPotWalletAddress = val;
+    function setDonationLotteryPrizeWalletAddress(address val) public onlyOwner {
+        donationLotteryPrizeWalletAddress = val;
     }
     function setFaaSWalletAddress(address val) public onlyOwner {
         faaSWalletAddress = val;
