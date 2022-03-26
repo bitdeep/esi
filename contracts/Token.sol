@@ -782,8 +782,8 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv20";
-    string private _symbol = "TSTv20";
+    string private _name = "TESTv23";
+    string private _symbol = "TSTv23";
     uint8 public immutable decimals = 9;
 
     address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -1119,7 +1119,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         if( tt.tMarketingFundFee > 0 )
             emit Transfer(msg.sender, marketingFundWalletAddress, tt.tMarketingFundFee);
 
-        if( tt.tdonationLotteryPrizeFee > 0 )
+        if( tt.tDonationLotteryPrizeFee > 0 )
             emit Transfer(msg.sender, donationLotteryPrizeWalletAddress, tt.tDonationLotteryPrizeFee);
 
         if( tt.tBurn > 0 )
