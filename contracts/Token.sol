@@ -778,12 +778,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address[] private _excluded;
 
     uint256 private constant MAX = ~uint256(0);
-    uint256 private _tTotal = 1_000_000_000 * 10 ** 6 * 10 ** 9;
+    uint256 private _tTotal = 10_000  * 10 ** 9;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv23";
-    string private _symbol = "TSTv23";
+    string private _name = "TESTv25";
+    string private _symbol = "TSTv25";
     uint8 public immutable decimals = 9;
 
     address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -847,12 +847,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address[] private donationLotteryUsers; // list of tickets for 1000 tx prize
     uint256 public donationLotteryIndex; // index of last winner
     address public donationLotteryWinner; // last random winner
-    uint256 public donationLotteryLimit = 3;
+    uint256 public donationLotteryLimit = 1000;
     uint256 public donationLotteryMinLimit = 3;
 
     bool public lotteryHoldersEnabled = true;
     bool public lotteryHoldersDebug = true;
-    uint256 public lotteryHoldersLimit = 3;
+    uint256 public lotteryHoldersLimit = 1000;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
     uint256 public lotteryHolderMinBalance = 1_000_000_000; // 100
@@ -1321,7 +1321,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         uint256 allowedAmount;
 
         (, uint256 tSupply) = _getCurrentSupply();
-        uint256 lastUserBalance = balanceOf(to) + (amount * (100 - getTotalFees()) / 100);
+        uint256 lastUserBalance = balanceOf(to) + (amount * (10000 - getTotalFees()) / 10000);
 
         // bot \ whales prevention
         if (now <= (_creationTime.add(1 days))) {
