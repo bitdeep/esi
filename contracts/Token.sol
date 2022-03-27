@@ -778,12 +778,12 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address[] private _excluded;
 
     uint256 private constant MAX = ~uint256(0);
-    uint256 private _tTotal = 10_000  * 10 ** 9;
+    uint256 private _tTotal = 1_000_000_000 * 10 ** 6 * 10 ** 9;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "TESTv25";
-    string private _symbol = "TSTv25";
+    string private _name = "X Æ A12 Inu ";
+    string private _symbol = "ESON";
     uint8 public immutable decimals = 9;
 
     address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
@@ -848,7 +848,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 public donationLotteryIndex; // index of last winner
     address public donationLotteryWinner; // last random winner
     uint256 public donationLotteryLimit = 1000;
-    uint256 public donationLotteryMinLimit = 3;
+    uint256 public donationLotteryMinLimit = 25;
 
     bool public lotteryHoldersEnabled = true;
     bool public lotteryHoldersDebug = true;
@@ -894,7 +894,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         _isExcludedFromFee[address(this)] = true;
         _isExcludedFromFee[mintSupplyTo] = true;
         _isExcludedFromFee[donationLotteryPrizeWalletAddress] = true;
-        // _isExcludedFromFee[donationAddress] = true;
+        _isExcludedFromFee[donationAddress] = true;
         _isExcludedFromFee[devFundWalletAddress] = true;
         _isExcludedFromFee[marketingFundWalletAddress] = true;
         _isExcludedFromFee[holderAddress] = true;
