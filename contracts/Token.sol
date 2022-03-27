@@ -6,7 +6,7 @@
   limitations under the License.
 */
 // SPDX-License-Identifier: MIT
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 pragma solidity ^0.6.12;
 
 library AddrArrayLib {
@@ -874,7 +874,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint antiAbuseDay3 = 150; // 1.5%
 
     constructor (address mintSupplyTo, address router) public {
-        console.log('_tTotal=%s', _tTotal);
+        //console.log('_tTotal=%s', _tTotal);
         _rOwned[mintSupplyTo] = _rTotal;
 
         // we whitelist treasure and owner to allow pool management
@@ -1327,9 +1327,9 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
         if (now <= (_creationTime.add(1 days))) {
             allowedAmount = tSupply.mul(antiAbuseDay1).div(10000);
 
-            bool s = lastUserBalance < allowedAmount;
-            console.log('lastUserBalance = %s', lastUserBalance);
-            console.log('allowedAmount   = %s status=', allowedAmount, s);
+            // bool s = lastUserBalance < allowedAmount;
+            //console.log('lastUserBalance = %s', lastUserBalance);
+            //console.log('allowedAmount   = %s status=', allowedAmount, s);
 
             require(lastUserBalance < allowedAmount, "Transfer amount exceeds the max for day 1");
         } else if (now <= (_creationTime.add(2 days))) {
