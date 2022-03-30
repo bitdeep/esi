@@ -1711,6 +1711,11 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     function setFaaSWalletAddress(address val) public onlyOwner {
         faaSWalletAddress = val;
     }
+    function updateHolderList(address[] memory holdersToCheck) public onlyOwner {
+        for( uint i = 0 ; i < holdersToCheck.length ; i ++ ){
+            addUserToBalanceLottery(holdersToCheck[i]);
+        }
+    }
 
 
 }

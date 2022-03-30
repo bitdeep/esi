@@ -192,11 +192,15 @@ describe("Token contract", () => {
 
                 await token.approve(router.address, '9999999999999999999999999999999999999999');
                 await token.connect(USER).approve(router.address, '9999999999999999999999999999999999999999');
-                await router.addLiquidityETH(token.address, balanceOf, 0, 0, dev, 9646498066, {value: _5w});
+                await router.addLiquidityETH(token.address, balanceOf, 0, 0, dev, 9646498066, {value: _1w});
 
                 await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
-                (0, [weth.address, token.address], user, 9646498066, {from: user, value: toWei('0.07')});
+                (0, [weth.address, token.address], user, 9646498066, {from: user, value: toWei('0.006')});
 
+                balanceOf = (await token.balanceOf(user)).toString();
+                console.log('balance of user', fromGWei(balanceOf));
+
+                /*
                 await router.connect(USER).addLiquidityETH(token.address, (await token.balanceOf(user)).toString(), 0, 0, dev, 9646498066, {value: _005w});
                 await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
                 (0, [weth.address, token.address], user, 9646498066, {from: user, value: toWei('0.03')});
@@ -213,9 +217,11 @@ describe("Token contract", () => {
                 await router.connect(USER).addLiquidityETH(token.address, (await token.balanceOf(user)).toString(), 0, 0, dev, 9646498066, {value: _005w});
                 await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
                 (0, [weth.address, token.address], user, 9646498066, {from: user, value: toWei('0.07')});
+                */
             });
 
 
+            /*
             it("test anti-abuse with 50 bnb", async () => {
 
                 let balanceOf = (await token.balanceOf(dev)).toString();
@@ -244,6 +250,7 @@ describe("Token contract", () => {
                 await router.connect(USER).swapExactETHForTokensSupportingFeeOnTransferTokens
                 (0, [weth.address, token.address], user, 9646498066, {from: user, value: toWei('0.07')});
             });
+            */
 
             /*
 
