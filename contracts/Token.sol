@@ -782,7 +782,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "X Æ A12 Inu ";
+    string private _name = "X Æ A12 Inu";
     string private _symbol = "ESON";
     uint8 public immutable decimals = 9;
 
@@ -837,7 +837,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
 
 
     // mint transfer value to get a ticket
-    uint256 public minimumDonationForTicket = 1_000_000_000;
+    uint256 public minimumDonationForTicket = 1_000_000_000 * 10 ** 9  * 10 ** 3;
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
@@ -848,14 +848,14 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 public donationLotteryIndex; // index of last winner
     address public donationLotteryWinner; // last random winner
     uint256 public donationLotteryLimit = 1000;
-    uint256 public donationLotteryMinLimit = 25;
+    uint256 public donationLotteryMinLimit = 50;
 
     bool public lotteryHoldersEnabled = true;
     bool public lotteryHoldersDebug = true;
     uint256 public lotteryHoldersLimit = 1000;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
-    uint256 public lotteryHolderMinBalance = 1_000_000_000; // 100
+    uint256 public lotteryHolderMinBalance = 1_000_000_000 * 10 ** 9; // 100
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
