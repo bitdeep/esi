@@ -778,11 +778,18 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     address[] private _excluded;
 
     uint256 private constant MAX = ~uint256(0);
-    uint256 private _tTotal = 1_000_000_000 * 10 ** 6 * 10 ** 9;
+    uint256 private _tTotal = 1_000_000_000_000_000_000_000;
+
+    uint256 public _maxTxAmount = 10_000_000_000_000_000_000; // 10b
+    uint256 private numTokensSellToAddToLiquidity = 1_000_000_000_000_000; // 1m
+    // mint transfer value to get a ticket
+    uint256 public minimumDonationForTicket = 1_000_000_000_000_000_000; // 1b
+    uint256 public lotteryHolderMinBalance  = 1_000_000_000_000_000_000; // 1b
+
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "X Æ A12 Inu";
+    string private _name = "Elonson Inu";
     string private _symbol = "ESON";
     uint8 public immutable decimals = 9;
 
@@ -830,14 +837,6 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
     uint256 public _creationTime = now;
-    uint256 public _maxTxAmount = 5_000_000 * 10 ** 6 * 10 ** 9;
-    uint256 private numTokensSellToAddToLiquidity = 500_000 * 10 ** 6 * 10 ** 9;
-
-
-
-
-    // mint transfer value to get a ticket
-    uint256 public minimumDonationForTicket = 1_000_000_000 * 10 ** 9  * 10 ** 3;
     uint256 public endtime; // when lottery period end and prize get distributed
     mapping(address => uint256) public userTicketsTs;
     bool public disableTicketsTs = false; // disable on testing env only
@@ -855,7 +854,7 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     uint256 public lotteryHoldersLimit = 1000;
     uint256 public lotteryHoldersIndex = 0;
     address public lotteryHoldersWinner;
-    uint256 public lotteryHolderMinBalance = 1_000_000_000 * 10 ** 9; // 100
+
 
     // list of balance by users illegible for holder lottery
     AddrArrayLib.Addresses private ticketsByBalance;
