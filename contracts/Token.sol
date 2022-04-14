@@ -793,16 +793,16 @@ contract Token is IAnyswapV3ERC20, Context, Ownable {
     string private _symbol = "ESON";
     uint8 public immutable decimals = 9;
 
-    address public donationAddress = 0xC8D7d7438eF690DdB3941B3eF10a93A3CE1798b8;
-    address public holderAddress = 0x05aA6575142d44a4a7E0EA40314065C4fE9e6a57;
+    address public donationAddress = 0x676FbD4E4bd54e3a1Be74178df2fFefa15B4824b;
+    address public holderAddress = 0xa30d530C0BCB6f7b7D5a83B1D51716d7eeaf8E8F;
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
-    address public charityWalletAddress = 0x2a80B9b0A833979f50c889Cb30c681E4E5b1899c;
+    address public charityWalletAddress = 0x37c636084cf1d5e0a23dc6eAadcD2a93eF00E0c1;
 
 
-    address public devFundWalletAddress = 0x0F7984743C3Dcc14A3fc52dEeA09e8E9b9Bf4c81;
-    address public marketingFundWalletAddress = 0x80447479d3e4A1Da2abb9F79a1dA91A77F8E2271;
-    address public donationLotteryPrizeWalletAddress = 0x7e8A2d57FFE236d868735cC1Cd7c6CB1116859A2;
-    address public faaSWalletAddress = 0xC68D047E602cCED677F71Ed4D2b8E5E9Cf4D74E6;
+    address public devFundWalletAddress = 0xd68749450a51e50e4418F13fB3cEaBB27B2e68aB;
+    address public marketingFundWalletAddress = 0x6EAe593726Cdc7fe4249CF77a1B5B24f0bd3dB11;
+    address public donationLotteryPrizeWalletAddress = 0xa4c57d4bf1dEf34f40A15d8B89d3cCb315722d7F;
+    address public faaSWalletAddress = 0xfC1034EFFE7A26a0FD69B5c08b21d1e0855fdb19;
 
     uint256 public _FaaSFee = 10; //1%
     uint256 private _previous_FaaSFee = _FaaSFee;
