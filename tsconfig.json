@@ -1,15 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2018",
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
-    "types": ["mocha", "node"]
+    "resolveJsonModule": true
   },
-  "include": ["hardhat.config.ts", "./test"]
+  "include": ["./scripts", "./test/", "./deploy"],
+  "exclude": ["./baasPackage/", "baasPackage/factories/","./clientsPackage/", "./qnqPackage/", "./qnqPackage/factories/"],
+  "files": ["./hardhat.config.ts"]
 }
