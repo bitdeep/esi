@@ -115,7 +115,7 @@ const bot = async () => {
     // });
     db.saveDatabase();
 }
-cron.schedule('*/1 * * * *', () => {
+cron.schedule('*/10 * * * *', () => {
     console.log('running a task every minute');
     bot();
 }, {});
