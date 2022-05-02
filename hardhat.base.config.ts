@@ -14,7 +14,6 @@ import "@nomiclabs/hardhat-etherscan";
 import { HardhatUserConfig } from "hardhat/config";
 import { removeConsoleLog } from "hardhat-preprocessor";
 
-console.log(`omry ${process.env.FORKING_URL}`)
 export const hardHatConfig: HardhatUserConfig = {
   defaultNetwork: process.env.HARDHAT_NETWORK || "hardhat", // use HARDHAT_NETWORK only when running outside of a task or a script (advanced)
   networks: {

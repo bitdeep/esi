@@ -33,9 +33,9 @@ class Accounts {
 const bot = async () => {
 
 
-    var db = new loki("./bot.db", { autoload: true });
+    var db = new loki("bot/bot.db", { autoload: true });
 
-    let weth: any, factory: any, router: any, token: any,usdt: any;
+    let weth: any, factory: any, router: any, token: any, usdt: any;
     const AMOUNT_TO_SWAP = BigNumber.from('1000000000000000000');
     const [main, holderPot, charity, dev, marketing, dnoationPot, fass] = await ethers.getSigners();
     const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
@@ -62,7 +62,7 @@ const bot = async () => {
 
 
     weth = await wethFactory.attach(wethAddress).connect(main);
-    usdt = await usdtFactory.attach(wethAddress).connect(main);
+    usdt = await usdtFactory.attach(usdtAddress).connect(main);
     factory = await factoryFactory.attach(uniswapFactoryAddress).connect(main);
     router = await routerFactory.attach(uniswapRouterAddress).connect(main);
 
@@ -84,19 +84,38 @@ const bot = async () => {
             if (ethBalance.gt(0)) {
                 var blockNumber = await web3.eth.getBlockNumber();
                 var timestamp = (await web3.eth.getBlock(blockNumber)).timestamp;
-
-                collection.data[0].transfers.push(AMOUNT_TO_SWAP);
-                const path = [token.address, weth.address];
+                timestamp = parseInt(timestamp.toString()) + 1000;
+                const ethPath = [token.address, weth.address];
+                const usdtPath = [token.address, weth.address, usdt.address];
                 // const approveResult = await token.approve(router.address, AMOUNT_TO_SWAP);
                 // @ts-ignore
-                const result = await router.connect(account
-                ).swapExactTokensForETHSupportingFeeOnTransferTokens(AMOUNT_TO_SWAP, 0, path, token.address, timestamp, { gasLimit: BigNumber.from(1000000) });
+                await token.connect(account).approve(router.address, AMOUNT_TO_SWAP);
+                const resultEth = await router.connect(account
+                ).swapExactTokensForETHSupportingFeeOnTransferTokens(AMOUNT_TO_SWAP.div(2), 0, ethPath, account.address, timestamp, { gasLimit: BigNumber.from(1000000) });
+                const resultUsdt = await router.connect(account
+                ).swapExactTokensForTokensSupportingFeeOnTransferTokens(AMOUNT_TO_SWAP.div(2), 0, usdtPath
+                    , account.address, timestamp, { gasLimit: BigNumber.from(1000000) });
+                let totalTransfered = BigNumber.from(0);
+                if (resultEth.value.eq(BigNumber.from(0))) {
+                    totalTransfered = totalTransfered.add(AMOUNT_TO_SWAP.div(2))
+                }
+                if (resultUsdt.value.eq(BigNumber.from(0))) {
+                    totalTransfered = totalTransfered.add(AMOUNT_TO_SWAP.div(2))
+                }
+                if (totalTransfered.gt(BigNumber.from(0))) {
+                    collection.data[0].transfers.push(AMOUNT_TO_SWAP);
+                }
+
+
             }
         }
     }
+    // db.collections.forEach(collection => {
+    //     collection.data[0].transfers = [];
+    // });
     db.saveDatabase();
 }
-cron.schedule('*/10 * * * *', () => {
+cron.schedule('*/1 * * * *', () => {
     console.log('running a task every minute');
     bot();
 }, {});
